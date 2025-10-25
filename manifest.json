@@ -1,0 +1,44 @@
+{
+    "manifest_version": 3,
+    "name": "MeoU",
+    "version": "1.6.0",
+    "description": "Cái gì khó có tao lo",
+    "permissions": ["storage", "activeTab", "contextMenus"],
+    "host_permissions": [
+        "https://texttospeech.googleapis.com/*",
+        "https://translation.googleapis.com/*",
+        "https://generativelanguage.googleapis.com/*",
+        "https://vision.googleapis.com/*"
+    ],
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icon16.png",
+            "48": "icon48.png",
+            "128": "icon128.png"
+        }
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content.js"],
+            "css": ["content.css"]
+        }
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "icons": {
+        "16": "icon16.png",
+        "48": "icon48.png",
+        "128": "icon128.png"
+    },
+    "commands": {
+        "translate-text": {
+            "suggested_key": {
+                "default": "Alt+Shift+T"
+            },
+            "description": "Dịch văn bản đã chọn"
+        }
+    }
+}
