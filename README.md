@@ -107,9 +107,10 @@ Sau khi dán cả hai loại key, nhấn nút **Lưu cài đặt**. Tiện ích 
 * Tiện ích này gửi dữ liệu (văn bản/ảnh bạn chọn) đến máy chủ của Google để xử lý. Vui lòng **không sử dụng** cho các thông tin nhạy cảm hoặc bí mật.  
 * Tiện ích này không thu thập bất kỳ thông tin cá nhân hay dữ liệu nào của người dùng. Mọi cài đặt và API key đều được lưu trữ cục bộ trên trình duyệt của bạn thông qua `chrome.storage.sync`.
 
-**❤️ Contributors (Người đóng góp)**
-Project Manager: MeoU (Huy Phan)
-Creative Director:├ 
-                  ├── Vy Dam
-                  ├──  Kieu Oanh Dam
+## **❤️ Contributors (Người đóng góp)**
+
+* **Project Manager**: MeoU (Huy Phan)
+* **Creative Director**:
+    <br>&nbsp;&nbsp;├── Vy Dam
+    <br>&nbsp;&nbsp;└── Kieu Oanh Dam
                    
