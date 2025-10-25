@@ -30,7 +30,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
             chrome.tabs.sendMessage(tab.id, { 
                 action: "update_loading_popup", 
-                title: "Đợi tí đang học tiếng người..." 
+                title: "Đợi tí nhé..." 
             });
             
             const targetLang = data.targetLang || "vi-VN";
