@@ -9,8 +9,8 @@
 * **Phát Âm (TTS)**: Nghe bản dịch bằng giọng đọc tự nhiên của Google Cloud Text-to-Speech.  
 * **Hỗ trợ Đa Model**:  
   * **Gemini**: Hỗ trợ nhiều API key (tự động xoay vòng) và hai văn phong dịch độc đáo.  
-  * **Google Cloud**: Sử dụng Cloud Translation API truyền thống.  
-* **Tùy biến Văn Phong (Gemini)**:  
+  * **Google Cloud**: Sử dụng Cloud Translation API truyền thống tương tự như Google Dịch.  
+* **Tùy biến Văn Phong (Chỉ áp dụng với model Gemini)**:  
   * **Dân Chuyên**: Dịch thuật chuyên nghiệp, chính xác.  
   * **Bố mày người Việt**: Văn phong "đường phố", thân mật, sử dụng từ lóng và các câu cảm thán mạnh
 
@@ -37,16 +37,16 @@ Sau khi cài, bạn cần cung cấp API Keys để tiện ích hoạt động. 
 
 1. Truy cập [Google AI Studio](https://aistudio.google.com/app/apikey).  
 2. Đăng nhập và tạo một API Key mới.  
-3. Sao chép (Copy) key.  
+3. Sao chép key.  
 4. Dán vào ô **Gemini API Keys** trong popup Cài đặt.  
-   * *Mẹo*: Bạn có thể dán nhiều key, mỗi key một dòng. Tiện ích sẽ tự động xoay vòng key nếu có lỗi (ví dụ: hết quota).
+   * *Mẹo*: Bạn có thể dán nhiều key, mỗi key một dòng. Tiện ích sẽ tự động xoay vòng key nếu có lỗi.
 
 #### **B. Google Cloud API Key (Dùng cho TTS, Dịch Ảnh, Model GCP)**
 
 Đây là key quan trọng nhất, dùng cho 3 dịch vụ.
 
 1. Truy cập [Google Cloud Console](https://console.cloud.google.com/) và tạo một dự án mới.  
-2. **Bật thanh toán (Enable Billing)** cho dự án của bạn. (Google Cloud API không miễn phí, nhưng có cung cấp một lượng sử dụng miễn phí hàng tháng).  
+2. **Bật thanh toán (Enable Billing)** cho dự án của bạn. (Google Cloud API không miễn phí, nhưng có cung cấp một lượng sử dụng miễn phí hàng tháng lên đến 300$).  
 3. Trong dự án của bạn, đi tới **APIs & Services** \-\> **Library** (Thư viện).  
 4. Tìm và **Bật (Enable)** cả 3 API sau:  
    * Cloud Translation API (Dùng cho dịch)  
@@ -91,7 +91,7 @@ Sau khi dán cả hai loại key, nhấn nút **Lưu cài đặt**. Tiện ích 
 ## **💻 Công nghệ sử dụng**
 
 * **Nền tảng**: Chrome Extension API (Manifest V3)  
-* **Ngôn ngữ**: JavaScript (ES6+), HTML5, CSS3  
+* **Ngôn ngữ**: JavaScript, HTML5, CSS3  
 * **APIs (Google)**:  
   * Gemini API (https://www.google.com/search?q=generativelanguage.googleapis.com)  
   * Cloud Vision API (https://www.google.com/search?q=vision.googleapis.com)  
