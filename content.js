@@ -315,7 +315,7 @@ async function translateSelectedText() {
 
     titleEl.textContent = "Bản Dịch";
     translatedDiv.style.whiteSpace = 'pre-wrap'; 
-    translatedDiv.innerHTML = '<div class="ai-loading">Đợi bố mày tí...</div>';
+    translatedDiv.innerHTML = '<div class="ai-loading">Đợi tí...</div>';
     hideTranslateButton();
 
     try {
@@ -418,7 +418,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
         if (titleEl) titleEl.textContent = request.title;
         translatedDiv.style.whiteSpace = 'pre-wrap';
-        translatedDiv.innerHTML = '<div class="ai-loading">Đợi bố mày tí...</div>';
+        translatedDiv.innerHTML = '<div class="ai-loading">Đợi tí...</div>';
         
         if (popupEl.style.display !== 'block') {
             await positionAndShowImagePopup(popupEl);
