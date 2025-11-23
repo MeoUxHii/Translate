@@ -10,18 +10,24 @@ export function initSettings() {
     const saveBtn = document.getElementById("saveBtn");
     const saveApiBtn = document.getElementById("saveApiBtn");
     const translationService = document.getElementById("translationService");
+    const translationTone = document.getElementById("translationTone"); // Lấy element Tông giọng
     
     let demoAudio = null;
 
     chrome.storage.sync.get(
         [
             "gcpTtsApiKey", "apiKeys", "targetLang", "voicePrefs", "favoriteVoices",
-            "translationService", "speakingRate", "audioVolume"
+            "translationService", "speakingRate", "audioVolume", "translationTone" // Load thêm translationTone
         ],
         (data) => {
             if (data.gcpTtsApiKey) document.getElementById("gcpTtsApiKey").value = data.gcpTtsApiKey;
             if (data.apiKeys && Array.isArray(data.apiKeys)) document.getElementById("apiKeys").value = data.apiKeys.join("\n");
             if (data.translationService) translationService.value = data.translationService;
+            
+            // Set giá trị Tông giọng nếu có
+            if (data.translationTone && translationTone) {
+                translationTone.value = data.translationTone;
+            }
 
             const rate = data.speakingRate || 1.0;
             if (speakingRateSlider) speakingRateSlider.value = rate;
@@ -36,6 +42,7 @@ export function initSettings() {
 
             initCustomSelect("translationService");
             initCustomSelect("targetLang");
+            initCustomSelect("translationTone"); // Init custom select cho Tông giọng
         }
     );
 
@@ -124,6 +131,7 @@ export function initSettings() {
         const gcpTtsApiKey = document.getElementById("gcpTtsApiKey").value.trim();
         const targetLang = document.getElementById("targetLang").value;
         const translationService = document.getElementById("translationService").value;
+        const translationToneValue = document.getElementById("translationTone").value; // Lấy giá trị Tông giọng
         const apiKeysRaw = document.getElementById("apiKeys").value;
         const apiKeys = apiKeysRaw.split("\n").map((k) => k.trim()).filter((k) => k.length > 0);
         
@@ -137,7 +145,8 @@ export function initSettings() {
 
             chrome.storage.sync.set({
                 gcpTtsApiKey, apiKeys, targetLang,
-                voicePrefs: currentVoicePrefs, translationService, speakingRate, audioVolume
+                voicePrefs: currentVoicePrefs, translationService, speakingRate, audioVolume,
+                translationTone: translationToneValue // Lưu Tông giọng vào storage
             },
                 () => { 
                     showStatus("✅ Đã lưu!", "success", statusId); 

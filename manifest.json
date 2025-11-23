@@ -3,7 +3,7 @@
     "name": "MeoU",
     "version": "1.9.3",
     "description": "Cái gì khó có tao lo",
-    "permissions": ["storage", "activeTab", "contextMenus"],
+    "permissions": ["storage", "activeTab", "contextMenus", "geolocation"],
     "host_permissions": [
         "https://texttospeech.googleapis.com/*",
         "https://translation.googleapis.com/*",
