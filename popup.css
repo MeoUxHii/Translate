@@ -273,15 +273,6 @@ button#saveBtn:hover, button#saveThemeBtn:hover, button#saveApiBtn:hover { backg
 .chat-row.user { justify-content: flex-end; }
 .chat-row.bot { justify-content: flex-start; }
 
-.chat-avatar {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    object-fit: cover;
-    background: white;
-    border: 1px solid rgba(0,0,0,0.1);
-    flex-shrink: 0;
-}
-
 .chat-msg { 
     padding: 8px 12px; border-radius: 16px; font-size: 13px; 
     max-width: 80%; word-wrap: break-word; line-height: 1.4; 
@@ -477,4 +468,101 @@ input.theme-range::-webkit-slider-thumb { height: 16px; width: 16px; border-radi
 
 .typing-indicator-row {
     animation: fadeIn 0.2s ease;
+}
+
+/* --- CẬP NHẬT AVATAR CÓ VIỀN GRADIENT --- */
+
+/* Wrapper bọc cả Avatar và Viền SVG */
+.chat-avatar-wrapper {
+    position: relative;
+    width: 40px;  /* Kích thước tổng thể để chứa viền */
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-bottom: 4px;
+}
+
+/* Style cho Ảnh Avatar (Nằm lọt bên trong) */
+.chat-avatar {
+    width: 28px; /* Kích thước 28px như anh muốn */
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover; 
+    background: white;
+    /* Bỏ border cũ đi vì đã có viền SVG xịn hơn */
+    border: none; 
+    
+    position: absolute; /* Căn giữa tuyệt đối trong wrapper */
+    z-index: 1;
+    
+    cursor: pointer; 
+    transition: transform 0.2s;
+}
+
+.chat-avatar:hover {
+    transform: scale(1.1); /* Zoom nhẹ khi hover */
+}
+
+/* Style cho Vòng tròn SVG (Nằm đè lên trên hoặc dưới tùy ý, ở đây là lớp phủ) */
+.avatar-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 2; /* Nằm trên avatar một chút để viền sắc nét */
+    pointer-events: none; /* Để click vẫn xuyên qua vào ảnh avatar */
+}
+
+/* ... MODAL SOI FULL ẢNH ... */
+#avatar-modal {
+    display: none; 
+    position: fixed; 
+    z-index: 9999; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    background-color: rgba(0,0,0,0.85); 
+    align-items: center;
+    justify-content: center;
+    animation: fadeInModal 0.2s ease-out;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(255,255,255,0.1);
+    object-fit: contain;
+    animation: zoomInImage 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 25px;
+    color: #f1f1f1;
+    font-size: 35px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    line-height: 1;
+}
+
+.close-modal:hover {
+    color: #ff4757;
+    transform: scale(1.1);
+}
+
+@keyframes fadeInModal {
+    from {opacity: 0;} to {opacity: 1;}
+}
+
+@keyframes zoomInImage {
+    from {transform: scale(0.5); opacity: 0;} 
+    to {transform: scale(1); opacity: 1;}
 }
