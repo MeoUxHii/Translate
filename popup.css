@@ -566,3 +566,101 @@ input.theme-range::-webkit-slider-thumb { height: 16px; width: 16px; border-radi
     from {transform: scale(0.5); opacity: 0;} 
     to {transform: scale(1); opacity: 1;}
 }
+.audio-msg-bubble {
+    display: flex;
+    align-items: center;
+    background: #ffffff; /* Nền màu TRẮNG */
+    padding: 10px 15px;
+    border-radius: 20px;
+    gap: 12px;
+    min-width: 200px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Giảm shadow xíu cho nhẹ nhàng */
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.05); /* Thêm viền mỏng cho đỡ chìm */
+}
+
+/* Nút Play/Pause */
+.audio-control-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #f0f0f0; /* Nền nút màu xám nhạt cho nổi trên nền trắng */
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.1s, background 0.2s;
+}
+
+.audio-control-btn:hover {
+    background: #e0e0e0;
+}
+
+.audio-control-btn:active {
+    transform: scale(0.9);
+}
+
+.audio-control-btn svg {
+    width: 14px;
+    height: 14px;
+    fill: #333333; /* Icon màu ĐEN (xám đậm) */
+    margin-left: 2px; 
+}
+
+.audio-control-btn.playing svg {
+    margin-left: 0; 
+    fill: #000000; /* Đang play thì icon đen tuyền */
+}
+
+/* Khu vực sóng nhạc */
+.wave-container {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 24px;
+    flex: 1;
+}
+
+/* Các thanh sóng */
+.wave-bar {
+    width: 3px;
+    background: #d1d1d6; /* Màu XÁM nhạt khi đứng yên */
+    border-radius: 2px;
+    height: 100%;
+    animation: none; 
+}
+
+/* Khi đang play thì đổi màu và chạy animation */
+.audio-msg-bubble.playing .wave-bar {
+    background: #8e8e93; /* Màu XÁM đậm hơn chút khi chạy (hoặc giữ nguyên tùy anh) */
+    animation: wave 1s ease-in-out infinite;
+}
+
+/* Tạo hiệu ứng sóng nhấp nhô */
+@keyframes wave {
+    0%, 100% { height: 20%; }
+    50% { height: 100%; }
+}
+
+/* Set delay ngẫu nhiên cho từng thanh */
+.wave-bar:nth-child(1) { height: 40%; animation-delay: 0.0s; }
+.wave-bar:nth-child(2) { height: 50%; animation-delay: 0.1s; }
+.wave-bar:nth-child(3) { height: 80%; animation-delay: 0.2s; }
+.wave-bar:nth-child(4) { height: 60%; animation-delay: 0.3s; }
+.wave-bar:nth-child(5) { height: 90%; animation-delay: 0.4s; }
+.wave-bar:nth-child(6) { height: 40%; animation-delay: 0.5s; }
+.wave-bar:nth-child(7) { height: 70%; animation-delay: 0.2s; }
+.wave-bar:nth-child(8) { height: 50%; animation-delay: 0.4s; }
+.wave-bar:nth-child(9) { height: 30%; animation-delay: 0.1s; }
+.wave-bar:nth-child(10) { height: 60%; animation-delay: 0.3s; }
+
+/* Thời gian */
+.audio-duration {
+    font-size: 11px;
+    color: #333333; /* Màu chữ ĐEN */
+    font-weight: 600;
+    min-width: 30px;
+    text-align: right;
+}

@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "MeoU",
-    "version": "1.9.3",
+    "version": "1.9.4",
     "description": "Cái gì khó có tao lo",
     "permissions": ["storage", "activeTab", "contextMenus", "geolocation"],
     "host_permissions": [
@@ -32,7 +32,13 @@
     },
     "web_accessible_resources": [
         {
-            "resources": ["media/*.mp3", "content.css"],
+            "resources": [
+                "media/*.mp3", 
+                "content.css",
+                "pictures/*.webp",
+                "voice/*/*.mp3",
+                "avatar/*.png"
+            ],
             "matches": ["<all_urls>"]
         }
     ],
