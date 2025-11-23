@@ -1,15 +1,17 @@
 {
     "manifest_version": 3,
     "name": "MeoU",
-    "version": "1.6.0",
+    "version": "1.9.3",
     "description": "Cái gì khó có tao lo",
     "permissions": ["storage", "activeTab", "contextMenus"],
     "host_permissions": [
         "https://texttospeech.googleapis.com/*",
         "https://translation.googleapis.com/*",
         "https://generativelanguage.googleapis.com/*",
-        "https://vision.googleapis.com/*"
+        "https://vision.googleapis.com/*",
+        "<all_urls>"
     ],
+    
     "action": {
         "default_popup": "popup.html",
         "default_icon": {
@@ -18,16 +20,22 @@
             "128": "icon128.png"
         }
     },
+    
     "content_scripts": [
         {
             "matches": ["<all_urls>"],
-            "js": ["content.js"],
-            "css": ["content.css"]
+            "js": ["utils.js", "ui-renderer.js", "wibu-mode.js", "content.js"]
         }
     ],
     "background": {
         "service_worker": "background.js"
     },
+    "web_accessible_resources": [
+        {
+            "resources": ["media/*.mp3", "content.css"],
+            "matches": ["<all_urls>"]
+        }
+    ],
     "icons": {
         "16": "icon16.png",
         "48": "icon48.png",

@@ -3,205 +3,209 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Cài đặt</title>
-        <style>
-            body {
-                width: 300px;
-                padding: 15px; 
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-                    Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                margin: 0;
-                background: linear-gradient(
-                    135deg,
-                    #8a2be2,
-                    #ff69b4
-                ); 
-                color: white;
-            }
-            h2 {
-                margin-top: 0;
-                margin-bottom: 15px; 
-                color: white;
-                font-size: 16px; 
-                text-align: center;
-                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-            }
-            h3 {
-                margin-top: 15px; 
-                margin-bottom: 10px;
-                color: white;
-                font-size: 14px; 
-                text-align: center;
-                border-top: 1px solid rgba(255, 255, 255, 0.3);
-                padding-top: 10px; 
-            }
-            .input-group {
-                margin-bottom: 12px; 
-            }
-            label {
-                display: block;
-                margin-bottom: 4px; 
-                color: #f0f0f0;
-                font-size: 12px; 
-                font-weight: 500;
-            }
-            input[type="password"],
-            select,
-            textarea {
-                width: 100%;
-                padding: 8px; 
-                border: 1px solid rgba(255, 255, 255, 0.5);
-                border-radius: 6px;
-                font-size: 12px; 
-                color: #333;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-                    Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                box-sizing: border-box;
-                background: white;
-            }
-            /* Sửa lại CSS cho textarea */
-            textarea {
-                min-height: 60px; /* Cho cao hơn một chút */
-                height: auto;
-                resize: vertical; /* Cho phép kéo chiều dọc */
-            }
-            input[type="password"]::placeholder {
-                color: #888;
-            }
-            select option {
-                color: #333;
-                background: white;
-            }
-            button {
-                width: 100%;
-                padding: 8px; 
-                background: #ffffff;
-                color: #8a2be2;
-                border: none;
-                border-radius: 6px;
-                font-size: 14px;
-                cursor: pointer;
-                font-weight: 600;
-                transition: all 0.2s ease;
-                margin-top: 10px;
-            }
-            button:hover {
-                background: #f0f0f0;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            }
-            .status {
-                margin-top: 10px;
-                padding: 8px; 
-                border-radius: 4px;
-                font-size: 12px; 
-                display: none;
-                color: #333;
-                text-shadow: none;
-            }
-            .status.success {
-                background: #d4edda;
-                color: #155724;
-                display: block;
-            }
-            .status.error {
-                background: #f8d7da;
-                color: #721c24;
-                display: block;
-            }
-            .hint {
-                font-size: 11px; 
-                color: #f0f0f0;
-                margin-top: 4px; 
-            }
-            .hint a {
-                color: #ffffff;
-                font-weight: 600;
-            }
-            .voice-settings-grid {
-                display: grid;
-                grid-template-columns: 1fr;
-                gap: 12px; 
-            }
-            .voice-settings-grid .input-group {
-                margin-bottom: 0;
-            }
-        </style>
+        <title>Cài đặt & Lịch sử</title>
+        <link rel="stylesheet" href="popup.css">
     </head>
     <body>
-        <div class="input-group">
-            <label for="translationService">Model Dịch:</label>
-            <select id="translationService">
-                <option value="gemini">Gemini</option>
-                <option value="gcp">Google Cloud</option>
-            </select>
+        <div class="tab-buttons">
+            <button id="settingsTabBtn" class="tab-btn active">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+                <span>Model</span>
+            </button>
+            <button id="chatTabBtn" class="tab-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+                <span>Chat</span>
+            </button>
+            <button id="apiTabBtn" class="tab-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.65,10C11.83,7.67,9.61,6,7,6c-3.31,0-6,2.69-6,6s2.69,6,6,6c2.61,0,4.83-1.67,5.65-4H17v4h4v-4h2v-4H12.65z M7,14 c-1.1,0-2-0.9-2-2s0.9-2,2-2s2,0.9,2,2S8.1,14,7,14z"/></svg>
+                <span>API</span>
+            </button>
+            <button id="historyTabBtn" class="tab-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13,3c-4.97,0-9,4.03-9,9H1l3.89,3.89l0.07,0.14L9,12H6c0-3.87,3.13-7,7-7s7,3.13,7,7s-3.13,7-7,7c-1.93,0-3.68-0.79-4.94-2.06l-1.42,1.42C8.27,19.99,10.51,21,13,21c4.97,0,9-4.03,9-9S17.97,3,13,3z M12,8v5l4.28,2.54l0.72-1.21l-3.5-2.08V8H12z"/></svg>
+                <span>History</span>
+            </button>
+            <button id="themeTabBtn" class="tab-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,3c-4.97,0-9,4.03-9,9c0,4.97,4.03,9,9,9c0.83,0,1.5-0.67,1.5-1.5c0-0.39-0.15-0.74-0.39-1.01 c-0.23-0.26-0.38-0.61-0.38-0.99c0-0.83,0.67-1.5,1.5-1.5H16c2.76,0,5-2.24,5-5C21,5.24,16.97,3,12,3z M6.5,12c-0.83,0-1.5-0.67-1.5-1.5S5.67,9,6.5,9S8,9.67,8,10.5S7.33,12,6.5,12z M9.5,8C8.67,8,8,7.33,8,6.5S8.67,5,9.5,5S11,5.67,11,6.5 S10.33,8,9.5,8z M14.5,8c-0.83,0-1.5-0.67-1.5-1.5S13.67,5,14.5,5S16,5.67,16,6.5S15.33,8,14.5,8z M17.5,12c-0.83,0-1.5-0.67-1.5-1.5 S16.67,9,17.5,9S19,9.67,19,10.5S18.33,12,17.5,12z"/></svg>
+                <span>Theme</span>
+            </button>
         </div>
 
-        <!-- SỬA LẠI THÀNH TEXTAREA VÀ ID "apiKeys" -->
-        <div class="input-group">
-            <label for="apiKeys">Gemini API Keys:</label>
-            <textarea
-                id="apiKeys"
-                placeholder="Nhập API keys của Gemini"
-            ></textarea>
-             <div class="hint">
-                Lấy API key tại:
-                <a href="https://aistudio.google.com/app/apikey" target="_blank"
-                    >Google AI Studio</a
-                >
+        <div id="settings-content" class="tab-content">
+            <div class="settings-row">
+                <div class="input-group">
+                    <label for="translationService">Model Dịch:</label>
+                    <select id="translationService">
+                        <option value="gemini">Gemini</option>
+                        <option value="gcp">Google Cloud</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="targetLang">Ngôn Ngữ:</label>
+                    <select id="targetLang">
+                        <option value="vi-VN">Tiếng Việt (vi-VN)</option>
+                        <option value="en-US">English (en-US)</option>
+                        <option value="zh-CN">Tiếng Trung (zh-CN)</option>
+                        <option value="ja-JP">Tiếng Nhật (ja-JP)</option>
+                        <option value="ko-KR">Tiếng Hàn (ko-KR)</option>
+                    </select>
+                </div>
             </div>
-        </div>
 
-        <div class="input-group">
-            <label for="gcpTtsApiKey">Google Cloud API Key:</label>
-            <input
-                type="password"
-                id="gcpTtsApiKey"
-                placeholder="Nhập API key của Google Cloud"
-            />
-            <div class="hint">
-                Lấy API key tại:
-                <a href="https://console.cloud.google.com/apis/credentials" target="_blank"
-                    >GCP Credentials</a
-                >
-            </div>
-        </div>
-
-        <div class="input-group">
-            <label for="targetLang">Ngôn Ngữ:</label>
-            <select id="targetLang">
-                <option value="vi-VN">Tiếng Việt (vi-VN)</option>
-                <option value="en-US">English (en-US)</option>
-                <option value="zh-CN">Tiếng Trung (zh-CN)</option>
-                <option value="ja-JP">Tiếng Nhật (ja-JP)</option>
-                <option value="ko-KR">Tiếng Hàn (ko-KR)</option>
-                <option value="fr-FR">Tiếng Pháp (fr-FR)</option>
-                <option value="de-DE">Tiếng Đức (de-DE)</option>
-                <option value="es-ES">Tiếng Tây Ban Nha (es-ES)</option>
-            </select>
-        </div>
-        <div class="input-group">
-            <label for="translationTone">Tông giọng (Only Gemini):</label>
-            <select id="translationTone">
-                <option value="default">Dân Chuyên</option>
-                <option value="vietnamese_native">Bố mày người Việt</option>
-            </select>
-        </div>
-        <div class="voice-settings-grid">
             <div class="input-group">
-                <label for="voice-vi-VN">Giọng Tiếng Việt:</label>
-                <select id="voice-vi-VN">
-                    <option value="vi-VN-Wavenet-A">Nữ (Giọng A)</option>
-                    <option value="vi-VN-Wavenet-B">Nam (Giọng B)</option>
-                    <option value="vi-VN-Wavenet-C">Nữ (Giọng C)</option>
-                    <option value="vi-VN-Wavenet-D">Nam (Giọng D)</option>
+                <label for="translationTone">Tông giọng (Only Gemini - Dịch):</label>
+                <select id="translationTone">
+                    <option value="default">Dân Chuyên</option>
+                    <option value="vietnamese_native">Bố mày người Việt</option>
                 </select>
             </div>
-        </div>
-        
-        <button id="saveBtn">Lưu cài đặt</button>
-        <div id="status" class="status"></div>
+            
+            <div class="input-group">
+                <label for="voiceSelector">Giọng Nói:</label>
+                <div class="voice-controls">
+                    <div style="flex: 1; position: relative;">
+                        <select id="voiceSelector"><option value="" disabled selected>Đang tải...</option></select>
+                    </div>
+                    <button id="demoVoiceBtn" title="Nghe thử">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                    </button>
+                    <button id="toggleFavoriteBtn" title="Ghim">🖤</button>
+                </div>
+            </div>
 
-        <script src="popup.js"></script>
+            <div class="input-group">
+                <label>Âm lượng:</label>
+                <div class="volume-wrapper">
+                    <label class="slider">
+                        <input type="range" class="level" id="volumeLevel" min="0" max="100" step="1" value="100">
+                        <svg class="volume" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                        </svg>
+                    </label>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="speakingRate">Tốc độ đọc:</label>
+                <div class="volume-wrapper">
+                    <label class="slider">
+                        <input type="range" class="level" id="speakingRate" min="0.25" max="2.0" step="0.05" value="1.0">
+                        <div class="setting-btn">
+                            <span class="bar bar1"></span>
+                            <span class="bar bar2"></span>
+                            <span class="bar bar1"></span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <button id="saveBtn">Lưu cài đặt</button>
+            <div id="status" class="status"></div>
+        </div>
+
+        <div id="chat-content" class="tab-content">
+            <div id="chat-history">
+            </div>
+            
+            <div class="chat-input-wrapper">
+                <div id="attachmentPreviewContainer" style="display: none; padding: 5px; border-bottom: 1px dashed rgba(0,0,0,0.1);">
+                    <div id="attachmentContent" class="preview-wrapper">
+                    </div>
+                </div>
+
+                <div class="chat-input-top">
+                    <textarea id="chatInput" class="searchInput" rows="1" placeholder="Hỏi MeoU gì đó..."></textarea>
+                </div>
+                <div class="chat-actions-bar">
+                    <div class="actions-left">
+                        <button id="attachBtn" class="icon-btn" title="Đính kèm">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        </button>
+                        <button id="chatResetBtn" class="icon-btn" title="Cuộc trò chuyện mới">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+                        </button>
+                    </div>
+                    <div class="actions-right">
+                        <div class="custom-tone-wrapper">
+                            <button id="toneTriggerBtn" class="tone-trigger-btn">
+                                <span id="currentToneLabel">Dân chuyên</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+                            </button>
+                            <div id="toneMenu" class="tone-menu">
+                                <div class="tone-option" data-value="dan_chuyen">Dân chuyên</div>
+                                <div class="tone-option" data-value="lao_vo_cung">Láo vô cùng</div>
+                                <div class="tone-option" data-value="be_cung">Bé cưng</div>
+                                <div class="tone-option" data-value="mot_con_meo">Một con mèo</div>
+                            </div>
+                        </div>
+                        <button id="chatSendBtn" class="icon-btn" title="Gửi">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="api-content" class="tab-content">
+            <div class="input-group">
+                <label for="apiKeys">Gemini API Keys:</label>
+                <textarea id="apiKeys" placeholder="Nhập API keys của Gemini"></textarea>
+                <div class="hint"><a href="https://aistudio.google.com/app/apikey" target="_blank">Lấy Key tại đây</a></div>
+            </div>
+            <div class="input-group">
+                <label for="gcpTtsApiKey">Google Cloud API Key:</label>
+                <input type="password" id="gcpTtsApiKey" placeholder="Nhập API key của Google Cloud" />
+            </div>
+            <button id="saveApiBtn">Lưu API Keys</button>
+            <div id="api-status" class="status"></div>
+        </div>
+
+        <div id="history-content" class="tab-content">
+            <div id="history-header">
+                <div id="defaultBtnGroup" class="btn-group">
+                    <button id="selectHistoryBtn" style="background:#007bff;color:white;border:none;">Chọn</button>
+                    <button id="clearAllHistoryBtn" style="background:#ff5555;color:white;border:none;">Xoá hết</button>
+                </div>
+                <div id="selectionBtnGroup" class="btn-group" style="display: none;">
+                    <button id="selectAllBtn" style="background:#17a2b8;color:white;border:none;">Tất cả</button>
+                    <button id="deleteSelectedBtn" disabled style="background:#dc3545;color:white;border:none;">Xoá</button>
+                    <button id="cancelSelectBtn" style="background:#6c757d;color:white;border:none;">Huỷ</button>
+                </div>
+            </div>
+            <div id="history-list">
+                <div id="no-history" style="display: none; text-align: center; padding: 20px;">Chưa có lịch sử</div>
+            </div>
+        </div>
+
+        <div id="theme-content" class="tab-content">
+            <div class="input-group">
+                <div class="preview-bar" id="themePreviewBar"></div>
+            </div>
+            <div class="input-group">
+                <div class="preset-label">Mẫu có sẵn (Sáng / Tối):</div>
+                <div id="preset-list"></div>
+            </div>
+            <div class="input-group">
+                <label>Tuỳ chỉnh màu (Trộn):</label>
+                <div id="color-list"></div>
+                <button id="add-color-btn" type="button">+ Thêm màu</button>
+            </div>
+            <div class="input-group">
+                <div class="control-row">
+                    <label>Hướng Gradient:</label>
+                    <span class="value-display"><span id="angleVal">135</span>°</span>
+                </div>
+                <input type="range" id="gradientAngle" class="theme-range" min="0" max="360" value="135">
+            </div>
+            <div class="input-group">
+                <div class="control-row">
+                    <label>Cường độ màu (Opacity):</label>
+                    <span class="value-display"><span id="opacityVal">100</span>%</span>
+                </div>
+                <input type="range" id="bgOpacity" class="theme-range" min="10" max="100" value="100">
+            </div>
+            <button id="saveThemeBtn">Lưu Theme</button>
+            <div id="theme-status" class="status"></div>
+        </div>
+
+        <script type="module" src="popup.js"></script>
     </body>
 </html>
-
