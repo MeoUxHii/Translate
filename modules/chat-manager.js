@@ -33,7 +33,7 @@ export function initChat() {
 
     // Khởi tạo các module con
     initChatRenderer(chatHistory);
-    window.chatScrollToBottom = scrollToBottom; // Gán global để popup.js gọi
+    window.chatScrollToBottom = scrollToBottom; 
     loadMediaState();
     optimizeAvatars();
 
@@ -49,21 +49,18 @@ export function initChat() {
         "mot_con_meo": "Sen kia! 😾 Khui pate chưa mà dám gọi trẫm? Có việc gì tâu mau!"
     };
 
-    // --- HÀM MỚI: PHÂN TÍCH Ý ĐỊNH & NGỮ CẢNH ẢNH (Context Aware) ---
+    // --- HÀM 1: PHÂN TÍCH Ý ĐỊNH ẢNH (Context Aware) ---
     function analyzeImageIntent(text) {
         if (!text) return null;
         const lowerText = text.toLowerCase();
         
-        // 1. Check phủ định (Nếu có từ chối thì coi như không đòi, an toàn là trên hết)
         const negKeywords = ["không", "đừng", "chả", "chẳng", "khỏi", "thôi", "đéo", "éo"];
-        // Lưu ý: Chỉ check phủ định nếu câu có keyword "xem/gửi" để tránh chặn nhầm các câu hỏi như "em không đi làm à?"
         const actionKeywords = ["xem", "gửi", "coi"];
         const hasAction = actionKeywords.some(kw => lowerText.includes(kw));
         const hasNegation = negKeywords.some(kw => lowerText.includes(kw));
         
         if (hasAction && hasNegation) return null;
 
-        // 2. Định nghĩa Keyword cho từng Folder
         const contextRules = [
             {
                 folder: 'di_choi',
@@ -78,7 +75,6 @@ export function initChat() {
                 keywords: ["em chưa ngủ hả", "thức khuya", "chuẩn bị ngủ", "mới ngủ dậy", "ở nhà"]
             },
             {
-                // Nhóm này map ra cả 2 folder (di_lam + o_nha)
                 folders: ['di_lam', 'o_nha'],
                 keywords: ["đang làm gì đấy", "đang làm gì đó", "làm gì thế", "đang làm chi"]
             }
@@ -86,7 +82,6 @@ export function initChat() {
 
         let allowedFolders = [];
 
-        // 3. Ưu tiên check các keyword cụ thể trước
         contextRules.forEach(rule => {
             if (rule.keywords.some(kw => lowerText.includes(kw))) {
                 if (rule.folders) {
@@ -97,19 +92,91 @@ export function initChat() {
             }
         });
 
-        // 4. Nếu đã bắt được ngữ cảnh cụ thể -> Trả về luôn (Thu hẹp phạm vi)
+        if (allowedFolders.length > 0) {
+            return [...new Set(allowedFolders)];
+        }
+
+        const genericKeywords = ["xem hình", "gửi ảnh", "xem ảnh", "gửi hình", "coi hình"];
+        if (genericKeywords.some(kw => lowerText.includes(kw))) {
+            return ['di_choi', 'di_lam', 'o_nha'];
+        }
+
+        return null; 
+    }
+
+    // --- HÀM 2: PHÂN TÍCH Ý ĐỊNH AUDIO (Mới thêm) ---
+    function analyzeAudioIntent(text) {
+        if (!text) return null;
+        const lowerText = text.toLowerCase();
+
+        // 1. Check phủ định
+        const negKeywords = ["không", "đừng", "chả", "chẳng", "khỏi", "thôi", "im"];
+        // Nếu có keyword phủ định đi kèm động từ nghe/hát/nói -> return null
+        // (Logic đơn giản để tránh bắt nhầm câu "đừng hát nữa")
+        if (negKeywords.some(kw => lowerText.includes(kw)) && 
+           ["hát", "nói", "voice", "nghe"].some(kw => lowerText.includes(kw))) {
+            return null;
+        }
+
+        // 2. Định nghĩa các Rule theo yêu cầu của anh
+        const audioRules = [
+            {
+                folder: 'chuc_ngu_ngon',
+                keywords: ["chúc em ngủ ngon", "khuya rồi", "anh đi ngủ đây"]
+            },
+            {
+                folder: 'anh_iu_em_ko',
+                keywords: ["em yêu anh không", "em có thương anh không", "em ghét anh không", "em gửi voice", "muốn nghe giọng em"]
+            },
+            {
+                folder: 'an_gi_chua',
+                keywords: ["anh chưa ăn cơm", "anh đói quá", "anh chưa ăn gì"]
+            },
+            {
+                folder: 'gian_doi',
+                keywords: ["anh đang ngoài đường", "anh chưa đi làm về", "anh chưa về"]
+            },
+            {
+                folder: 'hoi_han',
+                keywords: ["mới đi làm về", "đi làm về mệt"] // Trùng keyword với ui_thuong_the
+            },
+            {
+                folder: 'sao_chua_ngu',
+                keywords: ["sao em chưa ngủ", "em chưa ngủ à"]
+            },
+            {
+                folder: 'ui_thuong_the',
+                keywords: ["đi làm mệt quá", "mới đi làm về"] // Trùng keyword với hoi_han
+            },
+            {
+                folder: 'chia_tay',
+                keywords: ["mình dừng lại", "mình chia tay"]
+            },
+            {
+                folder: 'dan_do',
+                keywords: ["chuẩn bị đi làm", "chuẩn bị ra ngoài"]
+            },
+            {
+                folder: 'em_nho_anh',
+                keywords: ["anh nhớ em quá à"]
+            }
+        ];
+
+        let allowedFolders = [];
+
+        // 3. Quét keyword
+        audioRules.forEach(rule => {
+            if (rule.keywords.some(kw => lowerText.includes(kw))) {
+                allowedFolders.push(rule.folder);
+            }
+        });
+
+        // 4. Trả về danh sách folder audio phù hợp (nếu có)
         if (allowedFolders.length > 0) {
             return [...new Set(allowedFolders)]; // Xóa trùng
         }
 
-        // 5. Nếu không có ngữ cảnh cụ thể, check keyword chung chung (xem hình/gửi ảnh)
-        const genericKeywords = ["xem hình", "gửi ảnh", "xem ảnh", "gửi hình", "coi hình"];
-        if (genericKeywords.some(kw => lowerText.includes(kw))) {
-            // Chung chung thì cho phép cả 3
-            return ['di_choi', 'di_lam', 'o_nha'];
-        }
-
-        return null; // Không phát hiện ý định đòi ảnh
+        return null; 
     }
 
     function getCurrentTime() {
@@ -128,7 +195,6 @@ export function initChat() {
                 const textPart = msg.parts.find(p => p.text);
                 if (textPart) {
                     let rawText = textPart.text;
-                    // Lọc bỏ các lệnh hệ thống ẩn khi hiển thị lại lịch sử
                     rawText = rawText.split('\n\n[Hệ thống (Ẩn):')[0]; 
                     rawText = rawText.split('\n\n[SYSTEM_OVERRIDE:')[0]; 
                     contentText = rawText;
@@ -187,31 +253,40 @@ export function initChat() {
         if (allChatData[currentTone].length > 50) allChatData[currentTone] = allChatData[currentTone].slice(-50);
         chrome.storage.local.set({ chatData: allChatData });
 
-        // --- LOGIC MỚI: SYSTEM OVERRIDE & COOLDOWN & CONTEXT ---
+        // --- LOGIC MỚI: SYSTEM OVERRIDE & COOLDOWN & CONTEXT (ĐÃ UPDATE AUDIO) ---
         const nowTime = new Date().getTime();
-        const timeDiff = nowTime - mediaState.lastImageTime;
+        const timeDiff = nowTime - mediaState.lastImageTime; 
         const isCooldownActive = timeDiff < COOLDOWN_TIME;
         
         // Phân tích ý định
-        const allowedContexts = analyzeImageIntent(text); // Trả về null hoặc mảng ['folder1', 'folder2']
-        const isAskingForImage = allowedContexts !== null;
+        const allowedImageContexts = analyzeImageIntent(text); 
+        const allowedAudioContexts = analyzeAudioIntent(text); // Check audio
+        
+        const isAskingForImage = allowedImageContexts !== null;
+        const isAskingForAudio = allowedAudioContexts !== null;
 
         let overrideInstruction = "";
 
-        // KỊCH BẢN 1: User KHÔNG đòi ảnh
-        if (!isAskingForImage) {
-            overrideInstruction = `\n\n[SYSTEM_OVERRIDE: User DID NOT ask for an image. DO NOT send any images. DO NOT use {{IMG}} tag. Just reply with text normally.]`;
+        // KỊCH BẢN 1: User ĐÒI AUDIO (Ưu tiên cao nhất)
+        if (isAskingForAudio) {
+            const contextStr = allowedAudioContexts.join(", ");
+            // Cấu trúc lệnh: {{AUDIO:ten_folder_trong_assets_js}}
+            // Ví dụ: {{AUDIO:anh_iu_em_ko}}
+            overrideInstruction = `\n\n[SYSTEM_OVERRIDE: User request implies a VOICE/AUDIO response. Contexts detected: [${contextStr}]. You MUST send a suitable audio using syntax {{AUDIO:category_name}} (e.g., {{AUDIO:${allowedAudioContexts[0]}}}). Do NOT send text only.]`;
         } 
-        // KỊCH BẢN 2: User ĐÒI ảnh nhưng CHƯA HẾT Cooldown
+        // KỊCH BẢN 2: User ĐÒI ẢNH nhưng CHƯA HẾT Cooldown
         else if (isAskingForImage && isCooldownActive) {
             const minutesLeft = Math.ceil((COOLDOWN_TIME - timeDiff) / 60000);
             overrideInstruction = `\n\n[SYSTEM_OVERRIDE: User asked for an image BUT cooldown is ACTIVE (wait ${minutesLeft} minutes). DO NOT send image. Politely refuse or make an excuse to wait.]`;
         } 
-        // KỊCH BẢN 3: User ĐÒI ảnh và ĐÃ HẾT Cooldown -> Gửi theo Context
+        // KỊCH BẢN 3: User ĐÒI ẢNH và ĐÃ HẾT Cooldown
+        else if (isAskingForImage && !isCooldownActive) {
+            const contextStr = allowedImageContexts.join(", ");
+            overrideInstruction = `\n\n[SYSTEM_OVERRIDE: User explicitly REQUESTED an image. Contexts allowed: [${contextStr}]. You MUST send a suitable image from one of these folders using syntax {{IMG:folder_id}} (e.g., {{IMG:${allowedImageContexts[0]}_1}}). Do NOT send images from other folders.]`;
+        }
+        // KỊCH BẢN 4: User KHÔNG đòi gì đặc biệt
         else {
-            const contextStr = allowedContexts.join(", ");
-            // Ví dụ: "di_lam, o_nha"
-            overrideInstruction = `\n\n[SYSTEM_OVERRIDE: User explicitly REQUESTED an image. Contexts allowed: [${contextStr}]. You MUST send a suitable image from one of these folders using syntax {{IMG:folder_id}} (e.g., {{IMG:${allowedContexts[0]}_1}}). Do NOT send images from other folders.]`;
+            overrideInstruction = `\n\n[SYSTEM_OVERRIDE: User DID NOT ask for media. Reply with text normally.]`;
         }
 
         const historyForApi = JSON.parse(JSON.stringify(allChatData[currentTone]));
