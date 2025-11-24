@@ -24,7 +24,7 @@
     "content_scripts": [
         {
             "matches": ["<all_urls>"],
-            "js": ["utils.js", "ui-renderer.js", "wibu-mode.js", "content.js"]
+            "js": ["assets.js", "utils.js", "ui-renderer.js", "wibu-mode.js", "content.js"]
         }
     ],
     "background": {

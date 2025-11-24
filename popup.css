@@ -705,11 +705,11 @@ input.theme-range::-webkit-slider-thumb { height: 16px; width: 16px; border-radi
 }
 
 .chat-msg.user .msg-time {
-    text-align: right; /* Tin của user (phải) -> Giờ nằm phải */
-    color: rgba(255, 255, 255, 0.9); /* Màu trắng */
+    text-align: right; 
+    color: rgba(255, 255, 255, 0.9); 
 }
 
 .chat-msg.bot .msg-time {
-    text-align: left; /* Tin của bot (trái) -> Giờ nằm trái */
-    color: rgba(0, 0, 0, 0.5); /* Màu đen nhạt */
+    text-align: left; 
+    color: rgba(0, 0, 0, 0.5); 
 }

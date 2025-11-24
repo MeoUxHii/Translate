@@ -49,6 +49,69 @@ export function initChat() {
         "mot_con_meo": "Sen kia! 😾 Khui pate chưa mà dám gọi trẫm? Có việc gì tâu mau!"
     };
 
+    // --- HÀM MỚI: PHÂN TÍCH Ý ĐỊNH & NGỮ CẢNH ẢNH (Context Aware) ---
+    function analyzeImageIntent(text) {
+        if (!text) return null;
+        const lowerText = text.toLowerCase();
+        
+        // 1. Check phủ định (Nếu có từ chối thì coi như không đòi, an toàn là trên hết)
+        const negKeywords = ["không", "đừng", "chả", "chẳng", "khỏi", "thôi", "đéo", "éo"];
+        // Lưu ý: Chỉ check phủ định nếu câu có keyword "xem/gửi" để tránh chặn nhầm các câu hỏi như "em không đi làm à?"
+        const actionKeywords = ["xem", "gửi", "coi"];
+        const hasAction = actionKeywords.some(kw => lowerText.includes(kw));
+        const hasNegation = negKeywords.some(kw => lowerText.includes(kw));
+        
+        if (hasAction && hasNegation) return null;
+
+        // 2. Định nghĩa Keyword cho từng Folder
+        const contextRules = [
+            {
+                folder: 'di_choi',
+                keywords: ["có đi đâu chơi không", "đi chơi không", "đi đâu chơi", "đi đu đưa"]
+            },
+            {
+                folder: 'di_lam',
+                keywords: ["đang đi làm hả", "có đi làm không", "ở công ty", "ở văn phòng"]
+            },
+            {
+                folder: 'o_nha',
+                keywords: ["em chưa ngủ hả", "thức khuya", "chuẩn bị ngủ", "mới ngủ dậy", "ở nhà"]
+            },
+            {
+                // Nhóm này map ra cả 2 folder (di_lam + o_nha)
+                folders: ['di_lam', 'o_nha'],
+                keywords: ["đang làm gì đấy", "đang làm gì đó", "làm gì thế", "đang làm chi"]
+            }
+        ];
+
+        let allowedFolders = [];
+
+        // 3. Ưu tiên check các keyword cụ thể trước
+        contextRules.forEach(rule => {
+            if (rule.keywords.some(kw => lowerText.includes(kw))) {
+                if (rule.folders) {
+                    allowedFolders.push(...rule.folders);
+                } else {
+                    allowedFolders.push(rule.folder);
+                }
+            }
+        });
+
+        // 4. Nếu đã bắt được ngữ cảnh cụ thể -> Trả về luôn (Thu hẹp phạm vi)
+        if (allowedFolders.length > 0) {
+            return [...new Set(allowedFolders)]; // Xóa trùng
+        }
+
+        // 5. Nếu không có ngữ cảnh cụ thể, check keyword chung chung (xem hình/gửi ảnh)
+        const genericKeywords = ["xem hình", "gửi ảnh", "xem ảnh", "gửi hình", "coi hình"];
+        if (genericKeywords.some(kw => lowerText.includes(kw))) {
+            // Chung chung thì cho phép cả 3
+            return ['di_choi', 'di_lam', 'o_nha'];
+        }
+
+        return null; // Không phát hiện ý định đòi ảnh
+    }
+
     function getCurrentTime() {
         const now = new Date();
         const hours = now.getHours().toString().padStart(2, '0');
@@ -65,7 +128,9 @@ export function initChat() {
                 const textPart = msg.parts.find(p => p.text);
                 if (textPart) {
                     let rawText = textPart.text;
+                    // Lọc bỏ các lệnh hệ thống ẩn khi hiển thị lại lịch sử
                     rawText = rawText.split('\n\n[Hệ thống (Ẩn):')[0]; 
+                    rawText = rawText.split('\n\n[SYSTEM_OVERRIDE:')[0]; 
                     contentText = rawText;
                 }
             }
@@ -77,7 +142,6 @@ export function initChat() {
                      const imgPart = msg.parts.find(p => p.inline_data);
                      if (imgPart) imgSrc = `data:${imgPart.inline_data.mime_type};base64,${imgPart.inline_data.data}`;
                 }
-                // Lưu ý: isHistory=true không cần truyền vào displayMessage của user, chỉ bot cần parse media
                 displayMessage(roleClass, text, imgSrc, fileInfo, false, time, currentTone);
             } else {
                 renderMessageRow(roleClass, contentText, time, true, currentTone);
@@ -123,28 +187,31 @@ export function initChat() {
         if (allChatData[currentTone].length > 50) allChatData[currentTone] = allChatData[currentTone].slice(-50);
         chrome.storage.local.set({ chatData: allChatData });
 
-        // Logic cooldown hệ thống (đã tách ra nhưng vẫn cần logic kiểm tra ở đây để build prompt)
+        // --- LOGIC MỚI: SYSTEM OVERRIDE & COOLDOWN & CONTEXT ---
         const nowTime = new Date().getTime();
-        const recentHistory = allChatData[currentTone].slice(-20);
+        const timeDiff = nowTime - mediaState.lastImageTime;
+        const isCooldownActive = timeDiff < COOLDOWN_TIME;
         
-        const hasImageInHistory = recentHistory.some(msg => 
-            msg.role === 'model' && 
-            msg.parts && 
-            msg.parts[0].text && 
-            (msg.parts[0].text.includes('{{IMG:') || msg.parts[0].text.includes('{{IMG_FILE:'))
-        );
+        // Phân tích ý định
+        const allowedContexts = analyzeImageIntent(text); // Trả về null hoặc mảng ['folder1', 'folder2']
+        const isAskingForImage = allowedContexts !== null;
 
-        let imageSystemNote = "";
-        
-        if (hasImageInHistory) {
-            const timeDiff = nowTime - mediaState.lastImageTime;
-            if (timeDiff < COOLDOWN_TIME) {
-                imageSystemNote = `\n\n[System: Bạn đã gửi ảnh cách đây ${Math.floor(timeDiff/60000)} phút. Vẫn chưa đủ 10 phút cooldown. TUYỆT ĐỐI KHÔNG ĐƯỢC gửi thêm ảnh lúc này.]`;
-            } else {
-                imageSystemNote = `\n\n[System: Đã hết cooldown ảnh. Nếu user yêu cầu, bạn có thể gửi ảnh.]`;
-            }
-        } else {
-            imageSystemNote = `\n\n[System: Nếu user yêu cầu xem ảnh, bạn CÓ THỂ gửi ảnh.]`;
+        let overrideInstruction = "";
+
+        // KỊCH BẢN 1: User KHÔNG đòi ảnh
+        if (!isAskingForImage) {
+            overrideInstruction = `\n\n[SYSTEM_OVERRIDE: User DID NOT ask for an image. DO NOT send any images. DO NOT use {{IMG}} tag. Just reply with text normally.]`;
+        } 
+        // KỊCH BẢN 2: User ĐÒI ảnh nhưng CHƯA HẾT Cooldown
+        else if (isAskingForImage && isCooldownActive) {
+            const minutesLeft = Math.ceil((COOLDOWN_TIME - timeDiff) / 60000);
+            overrideInstruction = `\n\n[SYSTEM_OVERRIDE: User asked for an image BUT cooldown is ACTIVE (wait ${minutesLeft} minutes). DO NOT send image. Politely refuse or make an excuse to wait.]`;
+        } 
+        // KỊCH BẢN 3: User ĐÒI ảnh và ĐÃ HẾT Cooldown -> Gửi theo Context
+        else {
+            const contextStr = allowedContexts.join(", ");
+            // Ví dụ: "di_lam, o_nha"
+            overrideInstruction = `\n\n[SYSTEM_OVERRIDE: User explicitly REQUESTED an image. Contexts allowed: [${contextStr}]. You MUST send a suitable image from one of these folders using syntax {{IMG:folder_id}} (e.g., {{IMG:${allowedContexts[0]}_1}}). Do NOT send images from other folders.]`;
         }
 
         const historyForApi = JSON.parse(JSON.stringify(allChatData[currentTone]));
@@ -156,7 +223,7 @@ export function initChat() {
         const dateString = now.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         
         systemContext += `\n\n[Hệ thống (Ẩn): Hiện tại là ${timeString}, ${dateString}${currentWeatherContext}.]`;
-        systemContext += imageSystemNote; 
+        systemContext += overrideInstruction; 
 
         if (lastMsg.parts && lastMsg.parts.length > 0) {
             if (lastMsg.parts[0].text) lastMsg.parts[0].text += systemContext;
