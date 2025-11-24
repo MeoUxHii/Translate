@@ -41,6 +41,10 @@ export function initChat() {
     let currentTone = "dan_chuyen"; 
     let currentAttachment = null; 
     let currentWeatherContext = "";
+    
+    // --- BIẾN MỚI: ĐẾM SỐ REQUEST ĐANG XỬ LÝ ---
+    // Giúp tránh việc tắt typing indicator của tin nhắn sau khi tin nhắn trước vừa delay xong
+    let activeRequestCount = 0; 
 
     const GREETINGS = {
         "dan_chuyen": "Chào bạn! Tôi là trợ lý AI chuyên nghiệp. Tôi có thể giúp gì cho bạn hôm nay?",
@@ -104,21 +108,19 @@ export function initChat() {
         return null; 
     }
 
-    // --- HÀM 2: PHÂN TÍCH Ý ĐỊNH AUDIO (Mới thêm) ---
+    // --- HÀM 2: PHÂN TÍCH Ý ĐỊNH AUDIO (Context Aware) ---
     function analyzeAudioIntent(text) {
         if (!text) return null;
         const lowerText = text.toLowerCase();
 
         // 1. Check phủ định
         const negKeywords = ["không", "đừng", "chả", "chẳng", "khỏi", "thôi", "im"];
-        // Nếu có keyword phủ định đi kèm động từ nghe/hát/nói -> return null
-        // (Logic đơn giản để tránh bắt nhầm câu "đừng hát nữa")
         if (negKeywords.some(kw => lowerText.includes(kw)) && 
            ["hát", "nói", "voice", "nghe"].some(kw => lowerText.includes(kw))) {
             return null;
         }
 
-        // 2. Định nghĩa các Rule theo yêu cầu của anh
+        // 2. Định nghĩa các Rule theo yêu cầu
         const audioRules = [
             {
                 folder: 'chuc_ngu_ngon',
@@ -138,7 +140,7 @@ export function initChat() {
             },
             {
                 folder: 'hoi_han',
-                keywords: ["mới đi làm về", "đi làm về mệt"] // Trùng keyword với ui_thuong_the
+                keywords: ["mới đi làm về", "đi làm về mệt"] 
             },
             {
                 folder: 'sao_chua_ngu',
@@ -146,7 +148,7 @@ export function initChat() {
             },
             {
                 folder: 'ui_thuong_the',
-                keywords: ["đi làm mệt quá", "mới đi làm về"] // Trùng keyword với hoi_han
+                keywords: ["đi làm mệt quá", "mới đi làm về"] 
             },
             {
                 folder: 'chia_tay',
@@ -171,9 +173,8 @@ export function initChat() {
             }
         });
 
-        // 4. Trả về danh sách folder audio phù hợp (nếu có)
         if (allowedFolders.length > 0) {
-            return [...new Set(allowedFolders)]; // Xóa trùng
+            return [...new Set(allowedFolders)]; 
         }
 
         return null; 
@@ -244,6 +245,9 @@ export function initChat() {
         displayMessage("user", uiText, uiImg, uiFile, true, timestamp, currentTone);
         chatInput.value = ""; chatInput.style.height = '18px';
         currentAttachment = null; renderAttachmentPreview();
+        
+        // --- CẬP NHẬT: TĂNG BIẾN ĐẾM VÀ HIỂN THỊ TYPING ---
+        activeRequestCount++; // Đánh dấu có 1 request mới
         showTypingIndicator(currentTone);
 
         const userMsgObj = { role: "user", parts: parts, timestamp: timestamp }; 
@@ -253,25 +257,23 @@ export function initChat() {
         if (allChatData[currentTone].length > 50) allChatData[currentTone] = allChatData[currentTone].slice(-50);
         chrome.storage.local.set({ chatData: allChatData });
 
-        // --- LOGIC MỚI: SYSTEM OVERRIDE & COOLDOWN & CONTEXT (ĐÃ UPDATE AUDIO) ---
+        // --- LOGIC MỚI: SYSTEM OVERRIDE & COOLDOWN & CONTEXT ---
         const nowTime = new Date().getTime();
         const timeDiff = nowTime - mediaState.lastImageTime; 
         const isCooldownActive = timeDiff < COOLDOWN_TIME;
         
         // Phân tích ý định
         const allowedImageContexts = analyzeImageIntent(text); 
-        const allowedAudioContexts = analyzeAudioIntent(text); // Check audio
+        const allowedAudioContexts = analyzeAudioIntent(text); 
         
         const isAskingForImage = allowedImageContexts !== null;
         const isAskingForAudio = allowedAudioContexts !== null;
 
         let overrideInstruction = "";
 
-        // KỊCH BẢN 1: User ĐÒI AUDIO (Ưu tiên cao nhất)
+        // KỊCH BẢN 1: User ĐÒI AUDIO (Ưu tiên)
         if (isAskingForAudio) {
             const contextStr = allowedAudioContexts.join(", ");
-            // Cấu trúc lệnh: {{AUDIO:ten_folder_trong_assets_js}}
-            // Ví dụ: {{AUDIO:anh_iu_em_ko}}
             overrideInstruction = `\n\n[SYSTEM_OVERRIDE: User request implies a VOICE/AUDIO response. Contexts detected: [${contextStr}]. You MUST send a suitable audio using syntax {{AUDIO:category_name}} (e.g., {{AUDIO:${allowedAudioContexts[0]}}}). Do NOT send text only.]`;
         } 
         // KỊCH BẢN 2: User ĐÒI ẢNH nhưng CHƯA HẾT Cooldown
@@ -284,7 +286,7 @@ export function initChat() {
             const contextStr = allowedImageContexts.join(", ");
             overrideInstruction = `\n\n[SYSTEM_OVERRIDE: User explicitly REQUESTED an image. Contexts allowed: [${contextStr}]. You MUST send a suitable image from one of these folders using syntax {{IMG:folder_id}} (e.g., {{IMG:${allowedImageContexts[0]}_1}}). Do NOT send images from other folders.]`;
         }
-        // KỊCH BẢN 4: User KHÔNG đòi gì đặc biệt
+        // KỊCH BẢN 4: User KHÔNG đòi gì
         else {
             overrideInstruction = `\n\n[SYSTEM_OVERRIDE: User DID NOT ask for media. Reply with text normally.]`;
         }
@@ -308,28 +310,66 @@ export function initChat() {
         chrome.runtime.sendMessage({ action: "chat", history: historyClean, tone: currentTone });
     }
 
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        if (request.tone !== currentTone) return;
+    // --- HÀM MỚI: XỬ LÝ TIN NHẮN ĐẾN (ĐẢM BẢO TÍNH ĐỒNG BỘ) ---
+    function handleIncomingMessage(request) {
+        let messageToSave = request.message; 
+        const textContent = messageToSave.parts && messageToSave.parts[0] ? messageToSave.parts[0].text : "";
 
-        if (request.action === "chat_incoming_message") {
-            removeTypingIndicator();
-            
-            let messageToSave = request.message; 
+        const hasMedia = textContent.includes("{{IMG") || textContent.includes("{{AUDIO");
+        const delayTime = hasMedia ? 5000 : 0;
+
+        // Nếu có media thì force show indicator lại, phòng trường hợp backend vừa gửi lệnh tắt
+        if (hasMedia) {
+            showTypingIndicator(currentTone);
+        }
+
+        const finalProcessing = () => {
             const timestamp = getCurrentTime();
             messageToSave.timestamp = timestamp;
-
-            renderMessageRow("bot", messageToSave.parts[0].text, timestamp, false, currentTone);
+            renderMessageRow("bot", textContent, timestamp, false, currentTone);
             
+            // Lưu lịch sử chat
             if (!allChatData[currentTone]) allChatData[currentTone] = [];
             allChatData[currentTone].push(messageToSave);
             if (allChatData[currentTone].length > 50) allChatData[currentTone] = allChatData[currentTone].slice(-50);
             chrome.storage.local.set({ chatData: allChatData });
+
+            // Logic giảm biến đếm và tắt indicator
+            activeRequestCount--; 
+            if (activeRequestCount <= 0) {
+                activeRequestCount = 0; 
+                removeTypingIndicator(); // Chỉ tắt khi count = 0
+            }
+        };
+
+        if (delayTime > 0) {
+            // Delay cho Media
+            setTimeout(finalProcessing, delayTime);
+        } else {
+            // Xử lý ngay lập tức cho Text (Đồng bộ - FIX RACE CONDITION)
+            finalProcessing();
+        }
+    }
+
+    // --- CẬP NHẬT: XỬ LÝ NHẬN TIN NHẮN ---
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        if (request.tone !== currentTone) return;
+
+        if (request.action === "chat_incoming_message") {
+            handleIncomingMessage(request);
         }
 
         if (request.action === "chat_typing") {
-            if (request.isTyping) showTypingIndicator(currentTone); else removeTypingIndicator();
+            // Chỉ hiện khi bắt đầu gõ.
+            // KHÔNG remove ở đây, việc đó để hàm handleIncomingMessage lo sau khi check activeRequestCount.
+            if (request.isTyping) {
+                showTypingIndicator(currentTone);
+            } 
         }
+        
         if (request.action === "chat_error") {
+            // Nếu lỗi thì reset hết
+            activeRequestCount = 0;
             removeTypingIndicator(); 
             renderBubble("error", "❌ Lỗi: " + request.error, null, currentTone); 
             scrollToBottom();
