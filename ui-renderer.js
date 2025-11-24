@@ -1,3 +1,4 @@
+// Các biến toàn cục cho UI
 let translateButton = null;
 let popup = null;
 let historyPopup = null;
@@ -5,6 +6,7 @@ let shadowRoot = null;
 let currentThemeIsDark = false;
 let hideButtonTimer = null;
 
+// --- DEFINITIONS (ICONS & GRADIENTS) ---
 const GRADIENT_DEFS_DARK = `
     <defs>
         <linearGradient id="gradThemeDark" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -99,7 +101,6 @@ function updateIcons(isDark) {
         if (retranslateBtn) retranslateBtn.innerHTML = icons.retranslate;
         if (copyBtn && !copyBtn.innerHTML.includes("clipboard-list")) copyBtn.innerHTML = icons.copy;
         
-        // Logic icon Loa
         if (speakBtn && !speakBtn.classList.contains("loading")) {
              if(speakBtn.innerHTML.includes("volume-off")) speakBtn.innerHTML = icons.stop;
              else speakBtn.innerHTML = icons.speak;
@@ -124,9 +125,10 @@ function applyThemeToElements() {
             opacity: 100
         };
 
-        const gradient = getGradientString(theme);
-        const isDark = isThemeDark(theme.colors);
-        const textColor = getTextColor(isDark);
+        // Sử dụng hàm từ window (do utils.js đã gán vào window)
+        const gradient = window.getGradientString ? window.getGradientString(theme) : 'linear-gradient(135deg, #667eea, #764ba2)';
+        const isDark = window.isThemeDark ? window.isThemeDark(theme.colors) : false;
+        const textColor = window.getTextColor ? window.getTextColor(isDark) : '#333';
         
         updateIcons(isDark);
 
@@ -339,12 +341,13 @@ function createPopup() {
         chrome.storage.sync.get(["audioVolume"], (data) => {
             const volume = data.audioVolume !== undefined ? data.audioVolume / 100 : 1.0;
 
+            // FIX: Logic Nhạc chờ khi đang chờ Gemini
             if (isWaitingMode) {
                 if (currentAudio && currentAudioText === "WAITING_MUSIC") {
                     if (currentAudio.paused) {
                         currentAudio.volume = volume;
                         currentAudio.play();
-                        speakBtn.innerHTML = icons.speak;
+                        speakBtn.innerHTML = icons.speak; // Icon đang phát nhạc (hoặc stop tùy icon anh muốn)
                     } else {
                         currentAudio.pause();
                         speakBtn.innerHTML = icons.stop;
@@ -354,28 +357,34 @@ function createPopup() {
                 
                 resetAudioState();
                 try {
-                    const randomTrackPath = getRandomWaitingMusic(); 
-                    const musicUrl = chrome.runtime.getURL(randomTrackPath);
-                    currentAudio = new Audio(musicUrl);
-                    currentAudioText = "WAITING_MUSIC"; 
-                    currentAudio.volume = volume;
+                    // Gọi hàm nhạc chờ từ window.getRandomWaitingMusic (đã fix trong utils.js)
+                    const randomTrackPath = window.getRandomWaitingMusic ? window.getRandomWaitingMusic() : null;
                     
-                    speakBtn.innerHTML = icons.loading;
-                    speakBtn.classList.add("loading");
+                    if (randomTrackPath) {
+                        const musicUrl = chrome.runtime.getURL(randomTrackPath);
+                        currentAudio = new Audio(musicUrl);
+                        currentAudioText = "WAITING_MUSIC"; 
+                        currentAudio.volume = volume;
+                        
+                        speakBtn.innerHTML = icons.loading;
+                        speakBtn.classList.add("loading");
 
-                    currentAudio.play().then(() => { 
-                        speakBtn.innerHTML = icons.speak;
-                        speakBtn.classList.remove("loading");
-                    }).catch(err => { 
-                        console.error("Lỗi nhạc:", err); 
-                        speakBtn.textContent = "❌"; 
-                    });
-                    
-                    currentAudio.onended = () => { 
-                        currentAudio = null; 
-                        currentAudioText = ""; 
-                        speakBtn.innerHTML = icons.speak; 
-                    };
+                        currentAudio.play().then(() => { 
+                            speakBtn.innerHTML = icons.speak;
+                            speakBtn.classList.remove("loading");
+                        }).catch(err => { 
+                            console.error("Lỗi nhạc:", err); 
+                            speakBtn.textContent = "❌"; 
+                        });
+                        
+                        currentAudio.onended = () => { 
+                            currentAudio = null; 
+                            currentAudioText = ""; 
+                            speakBtn.innerHTML = icons.speak; 
+                        };
+                    } else {
+                        console.log("Không tìm thấy nhạc chờ");
+                    }
                 } catch (err) { console.error(err); }
                 return;
             }
@@ -466,14 +475,17 @@ function createPopup() {
         }
     });
 
+    // FIX: Logic Retranslate Button - Sử dụng window.supportedLangs
     const retranslateBtn = popup.querySelector(".ai-popup-retranslate");
-    supportedLangs.forEach(lang => {
-        const langBtn = document.createElement("button");
-        langBtn.className = "ai-lang-btn";
-        langBtn.textContent = lang.name;
-        langBtn.dataset.langCode = lang.code;
-        langSelector.appendChild(langBtn);
-    });
+    if (window.supportedLangs) {
+        window.supportedLangs.forEach(lang => {
+            const langBtn = document.createElement("button");
+            langBtn.className = "ai-lang-btn";
+            langBtn.textContent = lang.name;
+            langBtn.dataset.langCode = lang.code;
+            langSelector.appendChild(langBtn);
+        });
+    }
 
     retranslateBtn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -626,7 +638,11 @@ async function loadHistoryInPage() {
             response.history.forEach(item => {
                 const el = document.createElement('div');
                 el.className = 'ai-history-item'; 
-                el.innerHTML = `<div class="history-text-original">${escapeHTML(item.original)}</div><div class="history-text-translation">${escapeHTML(item.translation)}</div>`;
+                // Sử dụng window.escapeHTML nếu có
+                const safeOriginal = window.escapeHTML ? window.escapeHTML(item.original) : item.original;
+                const safeTranslation = window.escapeHTML ? window.escapeHTML(item.translation) : item.translation;
+                
+                el.innerHTML = `<div class="history-text-original">${safeOriginal}</div><div class="history-text-translation">${safeTranslation}</div>`;
                 historyList.appendChild(el);
             });
         } else { noHistory.style.display = 'block'; }

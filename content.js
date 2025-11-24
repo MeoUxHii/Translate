@@ -4,16 +4,19 @@ let selectionRange = null;
 createTranslateButton();
 
 document.addEventListener("mouseup", (e) => {
-    if (isWibuMode && isSelecting) {
-        isSelecting = false;
-        if (!selectionBox) return;
-        const rect = selectionBox.getBoundingClientRect();
+    // Sử dụng biến toàn cục window.isWibuMode và window.isSelecting
+    if (window.isWibuMode && window.isSelecting) {
+        window.isSelecting = false;
+        if (!window.selectionBox) return;
+        
+        const rect = window.selectionBox.getBoundingClientRect();
         const width = rect.width;
         const height = rect.height;
+        
         if (width > 10 && height > 10) {
             processSelection(rect.left, rect.top, width, height);
         } else {
-            if (selectionBox) selectionBox.style.display = 'none';
+            if (window.selectionBox) window.selectionBox.style.display = 'none';
         }
         return;
     }
@@ -40,11 +43,11 @@ document.addEventListener("mouseup", (e) => {
 });
 
 document.addEventListener("mousedown", (e) => {
-    if (isWibuMode) {
+    if (window.isWibuMode) {
         const path = e.composedPath();
         if (path.some(el => el.classList && el.classList.contains('manga-overlay-box'))) return;
         e.preventDefault();
-        isSelecting = true;
+        window.isSelecting = true;
         startX = e.clientX;
         startY = e.clientY;
         const box = createSelectionBox();
@@ -84,7 +87,7 @@ document.addEventListener("mousedown", (e) => {
 });
 
 document.addEventListener("mousemove", (e) => {
-    if (!isWibuMode || !isSelecting) return;
+    if (!window.isWibuMode || !window.isSelecting) return;
     const currentX = e.clientX;
     const currentY = e.clientY;
     const width = Math.abs(currentX - startX);
@@ -92,11 +95,11 @@ document.addEventListener("mousemove", (e) => {
     const left = Math.min(currentX, startX);
     const top = Math.min(currentY, startY);
 
-    if (selectionBox) {
-        selectionBox.style.width = width + "px";
-        selectionBox.style.height = height + "px";
-        selectionBox.style.left = left + "px";
-        selectionBox.style.top = top + "px";
+    if (window.selectionBox) {
+        window.selectionBox.style.width = width + "px";
+        window.selectionBox.style.height = height + "px";
+        window.selectionBox.style.left = left + "px";
+        window.selectionBox.style.top = top + "px";
     }
 });
 

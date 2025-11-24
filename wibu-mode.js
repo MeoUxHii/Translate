@@ -1,7 +1,10 @@
-let isWibuMode = false;
+// Khởi tạo biến toàn cục để content.js có thể truy cập
+window.isWibuMode = false;
+window.selectionBox = null;
+window.isSelecting = false;
+
+// Biến cục bộ (không cần chia sẻ)
 let startX, startY;
-let selectionBox = null;
-let isSelecting = false;
 
 function showToast(message) {
     const toast = document.createElement("div");
@@ -12,23 +15,23 @@ function showToast(message) {
 }
 
 function toggleWibuMode() {
-    isWibuMode = !isWibuMode;
-    if (isWibuMode) {
+    window.isWibuMode = !window.isWibuMode;
+    if (window.isWibuMode) {
         document.body.classList.add("wibu-mode-active");
         showToast("✨ Wibu Mode: ON");
     } else {
         document.body.classList.remove("wibu-mode-active");
         showToast("🐶 Wibu Mode: OFF");
-        if (selectionBox) selectionBox.style.display = 'none';
+        if (window.selectionBox) window.selectionBox.style.display = 'none';
     }
 }
 
 function createSelectionBox() {
-    if (selectionBox) return selectionBox;
-    selectionBox = document.createElement("div");
-    selectionBox.id = "wibu-selection-box";
-    getShadowRoot().appendChild(selectionBox);
-    return selectionBox;
+    if (window.selectionBox) return window.selectionBox;
+    window.selectionBox = document.createElement("div");
+    window.selectionBox.id = "wibu-selection-box";
+    getShadowRoot().appendChild(window.selectionBox);
+    return window.selectionBox;
 }
 
 function fitText(container, text) {
@@ -66,8 +69,15 @@ function createMangaOverlay(x, y, width, height, theme = 'light') {
     return { box, content };
 }
 
+// Hàm phân tích độ sáng (đơn giản hóa để chạy trong file này hoặc lấy từ global nếu có)
+function analyzeBrightnessSimple(canvas) {
+    // Logic đơn giản hoặc gọi hàm từ utils nếu đã gán window
+    // Tạm thời trả về 'light' nếu chưa implement sâu
+    return 'light';
+}
+
 async function processSelection(x, y, w, h) {
-    if (selectionBox) selectionBox.style.display = 'none';
+    if (window.selectionBox) window.selectionBox.style.display = 'none';
     try {
         chrome.runtime.sendMessage({ action: "capture_visible_tab" }, (response) => {
             if (chrome.runtime.lastError || !response || response.error) {
@@ -82,7 +92,10 @@ async function processSelection(x, y, w, h) {
                 canvas.width = w;
                 canvas.height = h;
                 ctx.drawImage(img, x * ratio, y * ratio, w * ratio, h * ratio, 0, 0, w, h);
-                const brightnessTheme = analyzeBrightness(canvas); 
+                
+                // Gọi hàm analyzeBrightness nếu nó tồn tại global, không thì dùng default
+                const brightnessTheme = (typeof window.analyzeBrightness === 'function') ? window.analyzeBrightness(canvas) : 'light';
+                
                 const { content, box } = createMangaOverlay(x, y, w, h, brightnessTheme);
                 const croppedDataUrl = canvas.toDataURL("image/jpeg");
                 chrome.runtime.sendMessage({ action: "translate_image_data", imageData: croppedDataUrl }, (transResponse) => {

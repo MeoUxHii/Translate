@@ -1,4 +1,6 @@
-export const supportedLangs = [
+// Gán các biến và hàm vào window để dùng chung (Content Script không hỗ trợ module import trực tiếp dễ dàng)
+
+window.supportedLangs = [
     { code: "vi-VN", name: "Tiếng Việt" },
     { code: "en-US", name: "Tiếng Anh" },
     { code: "zh-CN", name: "Tiếng Trung" },
@@ -9,7 +11,7 @@ export const supportedLangs = [
     { code: "es-ES", name: "Tiếng Tây Ban Nha" }
 ];
 
-export const IMAGE_MAP = {
+window.IMAGE_MAP = {
     "1": "pictures/1.webp",
     "2": "pictures/2.webp",
     "3": "pictures/3.webp",
@@ -25,7 +27,7 @@ export const IMAGE_MAP = {
     "13": "pictures/13.webp"
 };
 
-export const VOICE_MAP = {
+window.VOICE_MAP = {
     "an_gi_chua": [
         "voice/an_gi_chua/an_gi_chua.mp3"
     ],
@@ -59,29 +61,43 @@ export const VOICE_MAP = {
     ]
 };
 
+// Danh sách nhạc chờ (bổ sung để fix lỗi thiếu hàm)
+const WAITING_MUSIC_TRACKS = [
+    "media/2.mp3", "media/3.mp3", "media/4.mp3", 
+    "media/5.mp3", "media/7.mp3", "media/8.mp3", 
+    "media/9.mp3", "media/10.mp3", "media/11.mp3",
+    "media/12.mp3", "media/13.mp3"
+];
+
+// Hàm lấy random nhạc chờ
+window.getRandomWaitingMusic = function() {
+    if (WAITING_MUSIC_TRACKS.length === 0) return null;
+    const random = WAITING_MUSIC_TRACKS[Math.floor(Math.random() * WAITING_MUSIC_TRACKS.length)];
+    return random;
+};
+
 // Hàm lấy random 1 file voice từ topic
-export function getRandomVoice(topic) {
-    const files = VOICE_MAP[topic];
+window.getRandomVoice = function(topic) {
+    const files = window.VOICE_MAP[topic];
     if (!files || files.length === 0) return null;
     return files[Math.floor(Math.random() * files.length)];
-}
+};
 
-// Các hàm tiện ích cũ giữ nguyên
-export function hexToRgba(hex, alphaPercent) {
+window.hexToRgba = function(hex, alphaPercent) {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     const a = alphaPercent / 100;
     return `rgba(${r}, ${g}, ${b}, ${a})`;
-}
+};
 
-export function getGradientString(theme) {
+window.getGradientString = function(theme) {
     if (!theme || !theme.colors) return 'linear-gradient(135deg, #667eea, #764ba2)';
-    const rgbaColors = theme.colors.map(c => hexToRgba(c, theme.opacity));
+    const rgbaColors = theme.colors.map(c => window.hexToRgba(c, theme.opacity));
     return `linear-gradient(${theme.angle}deg, ${rgbaColors.join(", ")})`;
-}
+};
 
-export function isThemeDark(colors) {
+window.isThemeDark = function(colors) {
     if (!colors || colors.length === 0) return false;
     let totalLum = 0;
     colors.forEach(hex => {
@@ -91,15 +107,14 @@ export function isThemeDark(colors) {
         const lum = (0.299 * r + 0.587 * g + 0.114 * b);
         totalLum += lum;
     });
-    const avgLum = totalLum / colors.length;
-    return avgLum < 140;
-}
+    return (totalLum / colors.length) < 140;
+};
 
-export function getTextColor(isDark) {
+window.getTextColor = function(isDark) {
     return isDark ? '#f0f0f0' : '#333333';
-}
+};
 
-export function escapeHTML(str) {
+window.escapeHTML = function(str) {
     if (!str) return '';
     return str.replace(/[&<>"']/g, function(m) {
         return {
@@ -110,9 +125,9 @@ export function escapeHTML(str) {
             "'": '&#39;'
         }[m];
     });
-}
+};
 
-export function initCustomSelect(selectId) {
+window.initCustomSelect = function(selectId) {
     const originalSelect = document.getElementById(selectId);
     if (!originalSelect) return;
 
@@ -187,3 +202,20 @@ document.addEventListener("click", (e) => {
         });
     }
 });
+
+// Hỗ trợ module export cho môi trường module (như Popup)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        supportedLangs: window.supportedLangs,
+        IMAGE_MAP: window.IMAGE_MAP,
+        VOICE_MAP: window.VOICE_MAP,
+        getRandomVoice: window.getRandomVoice,
+        getRandomWaitingMusic: window.getRandomWaitingMusic,
+        hexToRgba: window.hexToRgba,
+        getGradientString: window.getGradientString,
+        isThemeDark: window.isThemeDark,
+        getTextColor: window.getTextColor,
+        escapeHTML: window.escapeHTML,
+        initCustomSelect: window.initCustomSelect
+    };
+}
