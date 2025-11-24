@@ -83,15 +83,12 @@ function createAudioBubble(audioSrc) {
             const audio = new Audio(audioSrc);
             
             audio.onloadedmetadata = () => {
-                // Ban đầu hiện tổng thời gian
                 timeDiv.textContent = formatTime(audio.duration);
             };
 
             audio.ontimeupdate = () => {
                 const percent = (audio.currentTime / audio.duration) * 100;
                 fallbackFill.style.width = `${percent}%`;
-                
-                // Đếm ngược: Tổng - Hiện tại
                 const remaining = Math.max(0, audio.duration - audio.currentTime);
                 timeDiv.textContent = formatTime(remaining);
             };
@@ -100,7 +97,7 @@ function createAudioBubble(audioSrc) {
                 btn.innerHTML = playIcon;
                 btn.classList.remove('playing');
                 fallbackFill.style.width = "0%";
-                timeDiv.textContent = formatTime(audio.duration); // Reset về tổng thời gian
+                timeDiv.textContent = formatTime(audio.duration);
             };
 
             btn.onclick = (e) => {
@@ -133,37 +130,33 @@ function createAudioBubble(audioSrc) {
         try {
             const wavesurfer = WaveSurfer.create({
                 container: `#${uniqueId}`,
-                waveColor: '#d1d5db',      // Màu xám nhạt (Chưa chạy)
-                progressColor: '#000000',  // MÀU ĐEN (Đã chạy) - Theo yêu cầu
-                cursorColor: 'transparent',
+                waveColor: '#d1d5db',      
+                progressColor: '#000000',  
+                cursorColor: '#9ca3af',    
                 barWidth: 3,
                 barRadius: 3,
-                cursorWidth: 0,
-                height: 32,                // Cao hơn xíu cho khớp nút to
+                cursorWidth: 2,            
+                height: 32,                
                 barGap: 2,
                 url: audioSrc,
                 normalize: true,
             });
 
-            // Khi load xong -> Hiện tổng thời gian
             wavesurfer.on('ready', () => {
                 const duration = wavesurfer.getDuration();
                 timeDiv.textContent = formatTime(duration);
             });
 
-            // Khi đang chạy -> Đếm ngược
             wavesurfer.on('audioprocess', (currentTime) => {
                 const duration = wavesurfer.getDuration();
                 const remaining = Math.max(0, duration - currentTime);
                 timeDiv.textContent = formatTime(remaining);
             });
 
-            // Khi tua (seek) -> Cập nhật lại thời gian đếm ngược
             wavesurfer.on('interaction', () => {
                  const currentTime = wavesurfer.getCurrentTime();
                  const duration = wavesurfer.getDuration();
                  timeDiv.textContent = formatTime(duration - currentTime);
-                 
                  if(!wavesurfer.isPlaying()) {
                      wavesurfer.play();
                      btn.innerHTML = pauseIcon;
@@ -176,7 +169,7 @@ function createAudioBubble(audioSrc) {
                 btn.classList.remove('playing');
                 wavesurfer.stop();
                 const duration = wavesurfer.getDuration();
-                timeDiv.textContent = formatTime(duration); // Reset về tổng thời gian
+                timeDiv.textContent = formatTime(duration); 
             });
 
             btn.onclick = (e) => {
@@ -302,7 +295,8 @@ export function initChat() {
         let displayText = rawText || "";
         const mediaItems = [];
 
-        const imgRegex = /{{IMG:(\d+)}}/g;
+        // SỬA: Regex cho phép cả chữ cái và dấu gạch dưới (ví dụ: o_nha_1)
+        const imgRegex = /{{IMG:([a-zA-Z0-9_]+)}}/g;
         let imgMatch;
         while ((imgMatch = imgRegex.exec(rawText)) !== null) {
             const imgId = imgMatch[1];
@@ -328,7 +322,8 @@ export function initChat() {
             const topic = voiceTopicMatch[1];
             const now = new Date().getTime();
             
-            if (!isHistory && (now - mediaState.lastVoiceTime > COOLDOWN_TIME)) {
+            // SỬA LỖI: Thêm điều kiện OR isHistory vào đây để khi load lại lịch sử vẫn hiện voice
+            if (isHistory || (now - mediaState.lastVoiceTime > COOLDOWN_TIME)) {
                 if (VOICE_MAP && VOICE_MAP[topic]) {
                     const files = VOICE_MAP[topic];
                     const availableFiles = files.filter(f => !mediaState.sentVoices.includes(f));
@@ -337,9 +332,12 @@ export function initChat() {
                     
                     mediaItems.push({ type: 'voice', src: selectedFile });
                     
-                    mediaState.lastVoiceTime = now;
-                    if(!mediaState.sentVoices.includes(selectedFile)) mediaState.sentVoices.push(selectedFile);
-                    saveMediaState();
+                    // CHỈ CẬP NHẬT STATE KHI KHÔNG PHẢI LÀ LOAD LỊCH SỬ
+                    if (!isHistory) {
+                        mediaState.lastVoiceTime = now;
+                        if(!mediaState.sentVoices.includes(selectedFile)) mediaState.sentVoices.push(selectedFile);
+                        saveMediaState();
+                    }
                 }
             }
             displayText = displayText.replace(voiceTopicMatch[0], "");
@@ -355,65 +353,95 @@ export function initChat() {
         return { displayText: displayText.trim(), mediaItems };
     }
 
+    // --- HELPER TẠO ROW & WRAPPER ---
+    function createChatRowWithWrapper(roleClass) {
+        const row = document.createElement("div");
+        row.className = `chat-row ${roleClass}`;
+        
+        // Chỉ tạo Avatar cho Bot
+        if (roleClass === 'bot') {
+            const wrapper = document.createElement("div");
+            wrapper.className = "chat-avatar-wrapper";
+            wrapper.innerHTML = `
+                <svg class="avatar-ring" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#avatarGradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <defs><linearGradient id="avatarGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00C6FF" /><stop offset="100%" stop-color="#0072FF" /></linearGradient></defs>
+                    <circle cx="12" cy="12" r="10"/>
+                </svg>
+            `;
+            const avatar = document.createElement("img");
+            avatar.className = "chat-avatar";
+            const originalSrc = AVATAR_MAP[currentTone] || "icon48.png";
+            avatar.src = CACHED_AVATARS[currentTone] || originalSrc;
+            avatar.dataset.tone = currentTone;
+            avatar.onclick = (e) => { e.stopPropagation(); showAvatarModal(avatar.src, false); };
+            wrapper.appendChild(avatar);
+            row.appendChild(wrapper);
+        }
+
+        const contentWrapper = document.createElement("div");
+        contentWrapper.className = "chat-content-wrapper";
+        row.appendChild(contentWrapper);
+
+        return { row, contentWrapper };
+    }
+
+    function appendTimestamp(element, timestamp) {
+        if (!timestamp || !element) return;
+        const timeSpan = document.createElement("div");
+        timeSpan.className = "msg-time";
+        timeSpan.textContent = timestamp;
+        element.appendChild(timeSpan);
+    }
+
     function renderMessageRow(roleClass, textContent, timestamp = null, isHistory = false) {
         const { displayText, mediaItems } = parseMessageContent(textContent, isHistory);
         const hasVoice = mediaItems.some(m => m.type === 'voice');
-        const finalDisplayText = hasVoice ? "" : displayText; 
-
-        if (!finalDisplayText && mediaItems.length === 0) return;
-
-        let lastRow = null;
+        // Voice bubble đã có time countdown, nên nếu chỉ có voice thì text rỗng là ok.
         
-        if (finalDisplayText) {
-            renderBubble(roleClass, finalDisplayText, timestamp);
-            lastRow = chatHistory.lastElementChild;
+        if (!displayText && mediaItems.length === 0) return;
+
+        const { row, contentWrapper } = createChatRowWithWrapper(roleClass);
+        let lastElement = null;
+
+        // 1. Render Text Bubble
+        if (displayText) {
+            const msgDiv = document.createElement("div");
+            msgDiv.className = `chat-msg ${roleClass}`;
+            const textSpan = document.createElement("div");
+            textSpan.textContent = displayText;
+            msgDiv.appendChild(textSpan);
+            contentWrapper.appendChild(msgDiv);
+            lastElement = msgDiv;
         }
 
+        // 2. Render Media Bubbles (Ảnh/Voice)
         if (mediaItems.length > 0) {
-            if (!lastRow || lastRow.classList.contains('user')) {
-                lastRow = document.createElement("div");
-                lastRow.className = `chat-row ${roleClass}`;
-                if (roleClass === 'bot') {
-                    const wrapper = document.createElement("div");
-                    wrapper.className = "chat-avatar-wrapper";
-                    wrapper.innerHTML = `
-                        <svg class="avatar-ring" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#avatarGradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <defs><linearGradient id="avatarGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00C6FF" /><stop offset="100%" stop-color="#0072FF" /></linearGradient></defs>
-                            <circle cx="12" cy="12" r="10"/>
-                        </svg>
-                    `;
-                    const avatar = document.createElement("img");
-                    avatar.className = "chat-avatar";
-                    const originalSrc = AVATAR_MAP[currentTone] || "icon48.png";
-                    avatar.src = CACHED_AVATARS[currentTone] || originalSrc;
-                    avatar.dataset.tone = currentTone;
-                    avatar.onclick = (e) => { e.stopPropagation(); showAvatarModal(avatar.src, false); };
-                    wrapper.appendChild(avatar);
-                    lastRow.appendChild(wrapper);
-                }
+            mediaItems.forEach(item => {
                 const msgDiv = document.createElement("div");
                 msgDiv.className = `chat-msg ${roleClass} media-msg`;
-                lastRow.appendChild(msgDiv);
-                chatHistory.appendChild(lastRow);
-            }
-
-            const msgDiv = lastRow.querySelector('.chat-msg');
-            mediaItems.forEach(item => {
+                
                 if (item.type === 'image') {
                     const img = document.createElement("img");
                     img.src = chrome.runtime.getURL(item.src);
                     img.className = "chat-img-content";
-                    img.style.marginTop = "8px";
                     img.onclick = () => showAvatarModal(img.src, true);
                     msgDiv.appendChild(img);
                 } else if (item.type === 'voice') {
                     const fullPath = chrome.runtime.getURL(item.src);
-                    const audioBubble = createAudioBubble(fullPath); // Không cần text nữa
-                    audioBubble.style.marginTop = "0px";
+                    const audioBubble = createAudioBubble(fullPath); 
                     msgDiv.appendChild(audioBubble);
                 }
+                contentWrapper.appendChild(msgDiv);
+                lastElement = msgDiv;
             });
         }
+
+        // Attach timestamp to the LAST bubble in the group
+        if (lastElement) {
+            appendTimestamp(lastElement, timestamp);
+        }
+
+        chatHistory.appendChild(row);
         scrollToBottom();
     }
 
@@ -446,63 +474,66 @@ export function initChat() {
         scrollToBottom();
     }
 
+    // Hàm này dùng cho thông báo lỗi, typing indicator, system msg đơn giản
     function renderBubble(roleClass, text, timestamp = null) { 
-        const row = document.createElement("div");
-        row.className = `chat-row ${roleClass}`;
-        if (roleClass === 'bot') {
-            const wrapper = document.createElement("div");
-            wrapper.className = "chat-avatar-wrapper";
-            wrapper.innerHTML = `
-                <svg class="avatar-ring" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#avatarGradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <defs><linearGradient id="avatarGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00C6FF" /><stop offset="100%" stop-color="#0072FF" /></linearGradient></defs>
-                    <circle cx="12" cy="12" r="10"/>
-                </svg>
-            `;
-            const avatar = document.createElement("img");
-            avatar.className = "chat-avatar";
-            const originalSrc = AVATAR_MAP[currentTone] || "icon48.png";
-            const cachedSrc = CACHED_AVATARS[currentTone];
-            avatar.src = cachedSrc || originalSrc;
-            avatar.dataset.tone = currentTone;
-            avatar.onclick = (e) => { e.stopPropagation(); showAvatarModal(avatar.src, false); };
-            wrapper.appendChild(avatar);
-            row.appendChild(wrapper);
-        }
+        const { row, contentWrapper } = createChatRowWithWrapper(roleClass === 'error' ? 'bot' : roleClass); // Error coi như bot nói
         const msgDiv = document.createElement("div");
         msgDiv.className = `chat-msg ${roleClass}`;
-        const textSpan = document.createElement("div");
-        textSpan.textContent = text;
-        msgDiv.appendChild(textSpan);
-
-        if (timestamp) {
-            const timeSpan = document.createElement("div");
-            timeSpan.className = "msg-time";
-            timeSpan.textContent = timestamp;
-            msgDiv.appendChild(timeSpan);
+        
+        // Xử lý typing indicator (HTML)
+        if (text.includes('<svg')) {
+             msgDiv.innerHTML = text;
+        } else {
+             const textSpan = document.createElement("div");
+             textSpan.textContent = text;
+             msgDiv.appendChild(textSpan);
         }
 
-        row.appendChild(msgDiv);
+        if (timestamp) appendTimestamp(msgDiv, timestamp);
+        contentWrapper.appendChild(msgDiv);
         chatHistory.appendChild(row);
     }
 
     function displayMessage(roleClass, text, imgSrc, fileInfo, scroll = true, timestamp = null) {
-        const row = document.createElement("div");
-        row.className = `chat-row ${roleClass}`;
-        const msgDiv = document.createElement("div");
-        msgDiv.className = `chat-msg ${roleClass}`;
-        
-        if(text) { const t = document.createElement("div"); t.textContent = text; msgDiv.appendChild(t); }
-        if(imgSrc) { const i = document.createElement("img"); i.src = imgSrc; i.className = "chat-img-content"; msgDiv.appendChild(i); }
-        if(fileInfo) { const f = document.createElement("div"); f.className = "chat-file-chip"; f.innerHTML = `<span>${escapeHTML(fileInfo.name)}</span>`; msgDiv.appendChild(f); }
-        
-        if (timestamp) {
-            const timeSpan = document.createElement("div");
-            timeSpan.className = "msg-time";
-            timeSpan.textContent = timestamp;
-            msgDiv.appendChild(timeSpan);
+        const { row, contentWrapper } = createChatRowWithWrapper(roleClass);
+        let lastElement = null;
+
+        if (text) {
+            const msgDiv = document.createElement("div");
+            msgDiv.className = `chat-msg ${roleClass}`;
+            const t = document.createElement("div"); 
+            t.textContent = text; 
+            msgDiv.appendChild(t);
+            contentWrapper.appendChild(msgDiv);
+            lastElement = msgDiv;
         }
 
-        row.appendChild(msgDiv);
+        if (imgSrc) {
+            const msgDiv = document.createElement("div");
+            msgDiv.className = `chat-msg ${roleClass} media-msg`;
+            const i = document.createElement("img"); 
+            i.src = imgSrc; 
+            i.className = "chat-img-content"; 
+            msgDiv.appendChild(i);
+            contentWrapper.appendChild(msgDiv);
+            lastElement = msgDiv;
+        }
+
+        if (fileInfo) {
+            const msgDiv = document.createElement("div");
+            msgDiv.className = `chat-msg ${roleClass}`;
+            const f = document.createElement("div"); 
+            f.className = "chat-file-chip"; 
+            f.innerHTML = `<span>${escapeHTML(fileInfo.name)}</span>`; 
+            msgDiv.appendChild(f);
+            contentWrapper.appendChild(msgDiv);
+            lastElement = msgDiv;
+        }
+
+        if (lastElement) {
+            appendTimestamp(lastElement, timestamp);
+        }
+
         chatHistory.appendChild(row);
         if(scroll) scrollToBottom();
     }
@@ -512,16 +543,13 @@ export function initChat() {
     
     function showTypingIndicator() {
         if (chatHistory.querySelector(".typing-indicator-row")) return;
-        const row = document.createElement("div"); row.className = "chat-row bot typing-indicator-row";
-        const wrapper = document.createElement("div"); wrapper.className = "chat-avatar-wrapper";
-        wrapper.innerHTML = `<svg class="avatar-ring" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="url(#avatarGradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`;
-        const avatar = document.createElement("img"); avatar.className = "chat-avatar typing-avatar"; 
-        const originalSrc = AVATAR_MAP[currentTone] || "icon48.png"; avatar.src = CACHED_AVATARS[currentTone] || originalSrc;
-        wrapper.appendChild(avatar); row.appendChild(wrapper);
-        const msgDiv = document.createElement("div"); msgDiv.className = "chat-msg bot typing-bubble"; 
-        msgDiv.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-icon lucide-ellipsis"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`;
-        row.appendChild(msgDiv); if (chatHistory) { chatHistory.appendChild(row); scrollToBottom(); }
+        // Dùng renderBubble để tận dụng wrapper
+        renderBubble("bot", `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-icon lucide-ellipsis"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`);
+        const lastRow = chatHistory.lastElementChild;
+        if (lastRow) lastRow.classList.add("typing-indicator-row");
+        scrollToBottom();
     }
+    
     function removeTypingIndicator() { const indicator = chatHistory.querySelector(".typing-indicator-row"); if (indicator) indicator.remove(); }
 
     function sendMessage() {

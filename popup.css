@@ -245,6 +245,7 @@ button#saveBtn:hover, button#saveThemeBtn:hover, button#saveApiBtn:hover { backg
     --level-color: #fff; --level-transition-duration: .1s; --icon-margin: 15px; --icon-color: var(--text-color); --icon-size: 30px;
     cursor: pointer; display: inline-flex; flex-direction: row-reverse; align-items: center; width: 100%; 
 }
+
 .slider .volume { margin-right: var(--icon-margin); color: var(--icon-color); width: var(--icon-size); height: auto; }
 .slider .level {
     -webkit-appearance: none; appearance: none; width: 100%; height: 8px; background: rgba(0,0,0,0.3); border-radius: 10px;
@@ -269,57 +270,63 @@ button#saveBtn:hover, button#saveThemeBtn:hover, button#saveApiBtn:hover { backg
     padding-bottom: 30px; 
 }
 
-.chat-row { display: flex; align-items: flex-end; gap: 8px; }
+.chat-row { 
+    display: flex; 
+    align-items: flex-end; 
+    gap: 8px; 
+    margin-bottom: 3px; /* GIẢM XUỐNG CÒN 6PX (1 NỬA SO VỚI CŨ LÀ 12PX) */
+}
 .chat-row.user { justify-content: flex-end; }
 .chat-row.bot { justify-content: flex-start; }
 
+/* WRAPPER MỚI: Gom nhóm Text và Ảnh */
+.chat-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* Khoảng cách giữa Text và Ảnh */
+    max-width: 80%;
+}
+
+.chat-row.user .chat-content-wrapper {
+    align-items: flex-end; /* User căn phải */
+}
+
+.chat-row.bot .chat-content-wrapper {
+    align-items: flex-start; /* Bot căn trái */
+}
+
 .chat-msg { 
     padding: 8px 12px; border-radius: 16px; font-size: 13px; 
-    max-width: 80%; word-wrap: break-word; line-height: 1.4; 
+    /* Bỏ max-width: 80% cũ đi vì Wrapper lo rồi */
+    width: fit-content;
+    max-width: 100%;
+    word-wrap: break-word; line-height: 1.4; 
     white-space: pre-wrap;
     display: flex;
     flex-direction: column;
     gap: 2px;
+    position: relative; /* Để định vị timestamp */
 }
 .chat-msg.user { background: var(--chat-user-bg); color: white; border-bottom-right-radius: 4px; }
 .chat-msg.bot { background: var(--chat-bot-bg); color: #333; border-bottom-left-radius: 4px; border: 1px solid rgba(0,0,0,0.05); }
 .chat-msg.error { background: #f8d7da; color: #721c24; align-self: center; font-size: 12px; }
-
-/* --- MỚI: CSS CHO MỐC THỜI GIAN --- */
-.msg-time {
-    font-size: 0.75em; /* Nhỏ hơn khoảng 3 bậc */
-    margin-top: 4px;
-    opacity: 0.9;
-    line-height: 1;
-    font-weight: 500;
-}
-
-.chat-msg.user .msg-time {
-    text-align: right; /* Tin của user (phải) -> Giờ nằm phải */
-    color: rgba(255, 255, 255, 0.9); /* Màu trắng */
-}
-
-.chat-msg.bot .msg-time {
-    text-align: left; /* Tin của bot (trái) -> Giờ nằm trái */
-    color: rgba(0, 0, 0, 0.5); /* Màu đen nhạt */
-}
-/* ---------------------------------- */
 
 .chat-msg.media-msg {
     background: transparent !important;
     padding: 0 !important;
     box-shadow: none;
     border: none;
+    margin-top: 0; /* Reset margin */
 }
 
 .chat-img-content {
-    max-width: 60%;
+    max-width: 130px; /* CHỈNH XUỐNG 100PX NHƯ YÊU CẦU */
     height: auto;
     border-radius: 12px;
     margin-top: 0;
     border: none;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    align-self: flex-start; 
+    display: block;
 }
 .chat-msg.user .chat-img-content {
     align-self: flex-end;
@@ -582,8 +589,8 @@ input.theme-range::-webkit-slider-thumb { height: 16px; width: 16px; border-radi
     align-items: center;
     background: #f3f4f6; /* Nền xám nhạt */
     padding: 6px 12px 6px 6px; /* Padding trái nhỏ để nút sát lề */
-    border-radius: 9999px; /* Bo tròn tuyệt đối */
-    gap: 12px;
+    border-radius: 16px; /* Bo tròn tuyệt đối */
+    gap: 5px;
     min-width: 240px; /* Dài hơn xíu */
     max-width: 300px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -593,10 +600,9 @@ input.theme-range::-webkit-slider-thumb { height: 16px; width: 16px; border-radi
 }
 
 .audio-control-btn {
-    width: 42px; /* Tăng kích thước nút */
-    height: 42px;
-    border-radius: 50%;
-    background: #e5e7eb; 
+    width: 32px; /* Nhỏ gọn lại */
+    height: 32px;
+    background: transparent; /* Xóa nền */
     border: none;
     display: flex;
     align-items: center;
@@ -604,23 +610,22 @@ input.theme-range::-webkit-slider-thumb { height: 16px; width: 16px; border-radi
     cursor: pointer;
     flex-shrink: 0;
     transition: all 0.2s ease;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    box-shadow: none; /* Xóa bóng */
+    padding: 0;
+    border-radius: 0; /* Bỏ tròn */
 }
 
 .audio-control-btn:hover {
-    background: #d1d5db;
-    transform: scale(1.05);
-}
-
-.audio-control-btn:active {
-    transform: scale(0.95);
+    background: transparent; /* Hover ko hiện nền */
+    transform: scale(1.1); /* Hiệu ứng phóng to nhẹ */
+    opacity: 0.7;
 }
 
 .audio-control-btn svg {
-    width: 20px; /* Tăng kích thước icon */
-    height: 20px;
+    width: 24px; /* Tăng kích thước icon lên cho rõ */
+    height: 24px;
     fill: #374151; 
-    margin-left: 3px; /* Căn chỉnh icon Play */
+    margin-left: 0; /* Căn giữa */
 }
 .audio-control-btn.playing svg {
     margin-left: 0; 
@@ -666,12 +671,13 @@ input.theme-range::-webkit-slider-thumb { height: 16px; width: 16px; border-radi
 .wave-bar:nth-child(10) { height: 60%; animation-delay: 0.3s; }
 
 .audio-duration {
-    font-size: 12px;
-    color: #111827; /* Màu đen/xám đậm (Cùng tông chữ chat) */
-    font-weight: 700;
-    min-width: 40px;
+    font-size: 11px; /* Giảm kích thước cho giống mốc thời gian */
+    color: rgba(0, 0, 0, 0.5); /* Màu xám nhạt giống mốc thời gian của Bot */
+    font-weight: 500; /* Bỏ in đậm (700 -> 500) */
+    min-width: 35px;
     text-align: right;
     font-variant-numeric: tabular-nums;
+    line-height: 1;
 }
 .fallback-progress-bar {
     width: 100%;
@@ -687,4 +693,23 @@ input.theme-range::-webkit-slider-thumb { height: 16px; width: 16px; border-radi
     height: 100%;
     background-color: #1f2937; /* Màu đen */
     transition: width 0.1s linear;
+}
+
+/* --- MỚI: CSS CHO MỐC THỜI GIAN --- */
+.msg-time {
+    font-size: 0.75em; /* Nhỏ hơn khoảng 3 bậc */
+    margin-top: 4px;
+    opacity: 0.9;
+    line-height: 1;
+    font-weight: 500;
+}
+
+.chat-msg.user .msg-time {
+    text-align: right; /* Tin của user (phải) -> Giờ nằm phải */
+    color: rgba(255, 255, 255, 0.9); /* Màu trắng */
+}
+
+.chat-msg.bot .msg-time {
+    text-align: left; /* Tin của bot (trái) -> Giờ nằm trái */
+    color: rgba(0, 0, 0, 0.5); /* Màu đen nhạt */
 }

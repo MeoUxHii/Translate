@@ -11,20 +11,35 @@ window.supportedLangs = [
     { code: "es-ES", name: "Tiếng Tây Ban Nha" }
 ];
 
+// CẬP NHẬT: Cấu trúc ảnh mới theo folder
 window.IMAGE_MAP = {
-    "1": "pictures/1.webp",
-    "2": "pictures/2.webp",
-    "3": "pictures/3.webp",
-    "4": "pictures/4.webp",
-    "5": "pictures/5.webp",
-    "6": "pictures/6.webp",
-    "7": "pictures/7.webp",
-    "8": "pictures/8.webp",
-    "9": "pictures/9.webp",
-    "10": "pictures/10.webp",
-    "11": "pictures/11.webp",
-    "12": "pictures/12.webp",
-    "13": "pictures/13.webp"
+    // --- ĐI CHƠI (1-8) ---
+    "di_choi_1": "pictures/di_choi/1.webp",
+    "di_choi_2": "pictures/di_choi/2.webp",
+    "di_choi_3": "pictures/di_choi/3.webp",
+    "di_choi_4": "pictures/di_choi/4.webp",
+    "di_choi_5": "pictures/di_choi/5.webp",
+    "di_choi_6": "pictures/di_choi/6.webp",
+    "di_choi_7": "pictures/di_choi/7.webp",
+    "di_choi_8": "pictures/di_choi/8.webp",
+
+    // --- ĐI LÀM (1-5) ---
+    "di_lam_1": "pictures/di_lam/1.webp",
+    "di_lam_2": "pictures/di_lam/2.webp",
+    "di_lam_3": "pictures/di_lam/3.webp",
+    "di_lam_4": "pictures/di_lam/4.webp",
+    "di_lam_5": "pictures/di_lam/5.webp",
+
+    // --- Ở NHÀ (1-9) ---
+    "o_nha_1": "pictures/o_nha/1.webp",
+    "o_nha_2": "pictures/o_nha/2.webp",
+    "o_nha_3": "pictures/o_nha/3.webp",
+    "o_nha_4": "pictures/o_nha/4.webp",
+    "o_nha_5": "pictures/o_nha/5.webp",
+    "o_nha_6": "pictures/o_nha/6.webp",
+    "o_nha_7": "pictures/o_nha/7.webp",
+    "o_nha_8": "pictures/o_nha/8.webp",
+    "o_nha_9": "pictures/o_nha/9.webp"
 };
 
 window.VOICE_MAP = {
@@ -61,7 +76,7 @@ window.VOICE_MAP = {
     ]
 };
 
-// Danh sách nhạc chờ (bổ sung để fix lỗi thiếu hàm)
+// Danh sách nhạc chờ
 const WAITING_MUSIC_TRACKS = [
     "media/2.mp3", "media/3.mp3", "media/4.mp3", 
     "media/5.mp3", "media/7.mp3", "media/8.mp3", 
@@ -203,7 +218,6 @@ document.addEventListener("click", (e) => {
     }
 });
 
-// Hỗ trợ module export cho môi trường module (như Popup)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         supportedLangs: window.supportedLangs,
