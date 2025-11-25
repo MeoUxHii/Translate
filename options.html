@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeoU Magic - Text Expander</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <button class="icon-btn" id="backBtn" title="Quay lại">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                </button>
+                <button class="icon-btn" id="helpBtn" title="Hướng dẫn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                </button>
+            </div>
+            <h1 class="app-title">MeoU Magic</h1>
+        </header>
+
+        <!-- Search -->
+        <div class="search-container">
+            <div class="search-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" id="searchInput" placeholder="Tìm kiếm template...">
+            </div>
+        </div>
+
+        <!-- List Stats -->
+        <div class="list-header">
+            <span class="list-title">Templates (<span id="templateCount">0</span>)</span>
+            <button class="icon-btn small" id="sortBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+        </div>
+
+        <!-- Template List -->
+        <div id="templateList" class="template-list">
+            <!-- Items will be injected here by JS -->
+            <div class="empty-state" style="display: none;">
+                <img src="icon48.png" style="opacity: 0.5; margin-bottom: 10px;">
+                <p>Chưa có phép thuật nào.<br>Tạo cái đầu tiên đi anh!</p>
+            </div>
+        </div>
+
+        <!-- Create Button -->
+        <div class="fab-container">
+            <button id="createBtn" class="primary-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                Tạo Template
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Form -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Thêm Magic mới</h2>
+                <button id="closeModalBtn" class="icon-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Phím tắt (Shortcut)</label>
+                    <input type="text" id="shortcutInput" placeholder="VD: -xl, /mail, dh">
+                    <small>Bấm Space để kích hoạt.</small>
+                </div>
+                <div class="form-group">
+                    <label>Nội dung thay thế</label>
+                    <textarea id="contentInput" rows="5" placeholder="Nội dung dài ngoằng mà bạn lười gõ..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="deleteBtn" class="danger-btn" style="display: none;">Xoá</button>
+                <div style="flex: 1;"></div>
+                <button id="cancelBtn" class="secondary-btn">Huỷ</button>
+                <button id="saveTemplateBtn" class="primary-btn">Lưu lại</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast">Đã lưu thành công!</div>
+
+    <script src="utils.js"></script>
+    <script src="options.js"></script>
+</body>
+</html>

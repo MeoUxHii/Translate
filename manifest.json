@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "MeoU",
-    "version": "1.9.4",
+    "version": "1.9.5",
     "description": "Cái gì khó có tao lo",
     "permissions": ["storage", "activeTab", "contextMenus", "geolocation"],
     "host_permissions": [
@@ -11,7 +11,7 @@
         "https://vision.googleapis.com/*",
         "<all_urls>"
     ],
-    
+    "options_page": "options.html",
     "action": {
         "default_popup": "popup.html",
         "default_icon": {

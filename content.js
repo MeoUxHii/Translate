@@ -1,35 +1,177 @@
 window.selectedText = "";
 let selectionRange = null;
 
+// --- MAGIC TEXT EXPANDER LOGIC (ULTRA ROBUST VERSION) ---
+let magicShortcuts = [];
+let isMagicEnabled = true;
+
+// Load settings
+chrome.storage.sync.get(['magicTemplates', 'magicEnabled'], (data) => {
+    if (data.magicTemplates) magicShortcuts = data.magicTemplates;
+    if (data.magicEnabled !== undefined) isMagicEnabled = data.magicEnabled;
+});
+
+// Listen for changes
+chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'sync') {
+        if (changes.magicTemplates) magicShortcuts = changes.magicTemplates.newValue || [];
+        if (changes.magicEnabled) isMagicEnabled = changes.magicEnabled.newValue;
+    }
+});
+
+// Hàm xử lý chính cho sự kiện input
+// Sử dụng input event là cách tốt nhất để bắt được ký tự vừa gõ trên mọi nền tảng
+function handleInput(e) {
+    if (!isMagicEnabled || !e.target) return;
+    
+    // Bỏ qua nếu đang xóa hoặc undo
+    if (e.inputType && (e.inputType.startsWith('delete') || e.inputType === 'historyUndo')) return;
+
+    const target = e.target;
+    const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+    const isEditable = target.isContentEditable;
+
+    if (!isInput && !isEditable) return;
+    
+    // Chỉ xử lý trên element đang được focus
+    if (target !== document.activeElement && !target.contains(document.activeElement)) return;
+
+    // Delay cực nhỏ để đảm bảo ký tự vừa gõ đã thực sự vào DOM/Value
+    setTimeout(() => {
+        if (isInput) {
+            checkAndExpandInput(target);
+        } else {
+            checkAndExpandContentEditable(target);
+        }
+    }, 0);
+}
+
+// Lắng nghe sự kiện input
+document.addEventListener('input', handleInput);
+
+function checkAndExpandInput(target) {
+    if (magicShortcuts.length === 0) return;
+
+    const text = target.value;
+    const cursorPosition = target.selectionStart;
+    const textBeforeCursor = text.slice(Math.max(0, cursorPosition - 50), cursorPosition);
+    
+    for (const template of magicShortcuts) {
+        if (textBeforeCursor.endsWith(template.shortcut)) {
+            // Tìm thấy shortcut!
+            const shortcutLen = template.shortcut.length;
+            
+            // Chọn shortcut vừa gõ
+            target.setSelectionRange(cursorPosition - shortcutLen, cursorPosition);
+            
+            // Dùng execCommand để thay thế -> Cái này giúp kích hoạt các event listeners của trang web
+            // để nó biết là value đã thay đổi (quan trọng cho React/Angular)
+            const success = document.execCommand('insertText', false, template.content);
+            
+            if (!success) {
+                // Fallback nếu execCommand thất bại (hiếm khi trên input/textarea)
+                const preText = text.substring(0, cursorPosition - shortcutLen);
+                const postText = text.substring(cursorPosition);
+                const newText = preText + template.content + postText;
+                
+                // Hack cho React 15/16+
+                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+                const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+
+                if (target.tagName === 'INPUT' && nativeInputValueSetter) {
+                    nativeInputValueSetter.call(target, newText);
+                } else if (target.tagName === 'TEXTAREA' && nativeTextAreaValueSetter) {
+                    nativeTextAreaValueSetter.call(target, newText);
+                } else {
+                    target.value = newText;
+                }
+                
+                // Restore cursor
+                const newCursorPos = cursorPosition - shortcutLen + template.content.length;
+                target.setSelectionRange(newCursorPos, newCursorPos);
+                
+                // Dispatch events thủ công
+                target.dispatchEvent(new Event('input', { bubbles: true }));
+                target.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            return;
+        }
+    }
+}
+
+function checkAndExpandContentEditable(target) {
+    if (magicShortcuts.length === 0) return;
+
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+    const node = range.startContainer;
+
+    // Lấy text content hiện tại.
+    // Lưu ý: Với contentEditable phức tạp, node có thể không phải text node thuần túy
+    // Nhưng ta chỉ quan tâm text ngay tại con trỏ
+    let textBeforeCursor = "";
+    let cursorOffset = 0;
+
+    if (node.nodeType === Node.TEXT_NODE) {
+        cursorOffset = range.startOffset;
+        textBeforeCursor = node.textContent.slice(Math.max(0, cursorOffset - 50), cursorOffset);
+    } else {
+        // Trường hợp node là element, thử lấy textContent nhưng cái này kém chính xác hơn
+        // Thường xảy ra khi vừa gõ xong 1 thẻ br hoặc div mới
+        return; 
+    }
+
+    for (const template of magicShortcuts) {
+        if (textBeforeCursor.endsWith(template.shortcut)) {
+            const shortcutLen = template.shortcut.length;
+
+            // 1. Chọn shortcut để xóa
+            // Tạo range bao trùm shortcut vừa gõ
+            const rangeToDelete = document.createRange();
+            try {
+                rangeToDelete.setStart(node, cursorOffset - shortcutLen);
+                rangeToDelete.setEnd(node, cursorOffset);
+                
+                selection.removeAllRanges();
+                selection.addRange(rangeToDelete);
+                
+                // 2. Thực hiện thay thế bằng execCommand
+                // Lệnh này cực kỳ mạnh, nó giả lập hành động Paste text của người dùng
+                // Giúp bypass hầu hết các cơ chế chặn của Facebook/Google Docs
+                document.execCommand('insertText', false, template.content);
+                
+                // Docs/Sheets đôi khi cần thêm cú hích này
+                if (target.isContentEditable) {
+                     target.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                
+                return; // Thành công rồi thì thoát
+            } catch (err) {
+                console.log("MeoU Magic: Lỗi thay thế text", err);
+                // Khôi phục selection cũ nếu lỗi
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+    }
+}
+// --- END MAGIC LOGIC ---
+
 createTranslateButton();
 
 document.addEventListener("mouseup", (e) => {
-    // Sử dụng biến toàn cục window.isWibuMode và window.isSelecting
     if (window.isWibuMode && window.isSelecting) {
         window.isSelecting = false;
         if (!window.selectionBox) return;
-        
         const rect = window.selectionBox.getBoundingClientRect();
-        const width = rect.width;
-        const height = rect.height;
-        
-        if (width > 10 && height > 10) {
-            processSelection(rect.left, rect.top, width, height);
-        } else {
-            if (window.selectionBox) window.selectionBox.style.display = 'none';
-        }
+        if (rect.width > 10 && rect.height > 10) processSelection(rect.left, rect.top, rect.width, rect.height);
+        else if (window.selectionBox) window.selectionBox.style.display = 'none';
         return;
     }
-
     const path = e.composedPath();
-    if (
-        path.some(el => el === translateButton) ||
-        path.some(el => el === popup) ||
-        path.some(el => el === historyPopup) ||
-        path.some(el => el.id === "ai-translate-popup") ||
-        path.some(el => el.id === "ai-history-popup")
-    ) return;
-    
+    if (path.some(el => el === translateButton || el === popup || el === historyPopup || el.id === "ai-translate-popup" || el.id === "ai-history-popup")) return;
     if ((popup && popup.classList.contains("ai-dragging")) || (historyPopup && historyPopup.classList.contains("ai-dragging"))) return;
     
     const text = window.getSelection().toString().trim();
@@ -64,7 +206,7 @@ document.addEventListener("mousedown", (e) => {
     if (isClickInside) return;
 
     if (popup && popup.style.display === "block") {
-        if (typeof popup.resetAudio === 'function') popup.resetAudio();
+        if (typeof popup.resetAudio === 'function') popupEl.resetAudio();
         
         const stopAudioFn = popup.querySelector('.ai-popup-speak') ? () => {} : null; 
         popup.style.display = "none";
