@@ -10,21 +10,20 @@ export function initSettings() {
     const saveBtn = document.getElementById("saveBtn");
     const saveApiBtn = document.getElementById("saveApiBtn");
     const translationService = document.getElementById("translationService");
-    const translationTone = document.getElementById("translationTone"); // Lấy element Tông giọng
+    const translationTone = document.getElementById("translationTone"); 
     
     let demoAudio = null;
 
     chrome.storage.sync.get(
         [
             "gcpTtsApiKey", "apiKeys", "targetLang", "voicePrefs", "favoriteVoices",
-            "translationService", "speakingRate", "audioVolume", "translationTone" // Load thêm translationTone
+            "translationService", "speakingRate", "audioVolume", "translationTone"
         ],
         (data) => {
             if (data.gcpTtsApiKey) document.getElementById("gcpTtsApiKey").value = data.gcpTtsApiKey;
             if (data.apiKeys && Array.isArray(data.apiKeys)) document.getElementById("apiKeys").value = data.apiKeys.join("\n");
             if (data.translationService) translationService.value = data.translationService;
             
-            // Set giá trị Tông giọng nếu có
             if (data.translationTone && translationTone) {
                 translationTone.value = data.translationTone;
             }
@@ -38,27 +37,35 @@ export function initSettings() {
             const currentLang = data.targetLang || "vi-VN";
             if (targetLangSelect) targetLangSelect.value = currentLang;
 
+            // Hiển thị loading tạm thời trong khi chờ data
+            if (voiceSelector && voiceSelector.options.length === 0) {
+                 const opt = document.createElement("option");
+                 opt.text = "Đang tải...";
+                 voiceSelector.add(opt);
+            }
+
             loadVoicesForLanguage(currentLang, data.voicePrefs || {}, data.favoriteVoices || {});
 
             initCustomSelect("translationService");
             initCustomSelect("targetLang");
-            initCustomSelect("translationTone"); // Init custom select cho Tông giọng
+            initCustomSelect("translationTone");
         }
     );
 
     if (targetLangSelect) {
         targetLangSelect.addEventListener("change", () => {
             const newLang = targetLangSelect.value;
+            // Không reset voiceSelector ngay để tránh nhấp nháy, hàm loadVoices sẽ thay thế nội dung sau
             if (voiceSelector) {
-                voiceSelector.innerHTML = '<option>Đang tải...</option>';
-                voiceSelector.disabled = true;
-                initCustomSelect("voiceSelector"); 
+                voiceSelector.disabled = true; // Disable tạm thời
             }
             chrome.storage.sync.get(["voicePrefs", "favoriteVoices"], (data) => {
                 loadVoicesForLanguage(newLang, data.voicePrefs || {}, data.favoriteVoices || {});
             });
         });
     }
+    
+    // ... (Phần code event listener khác giữ nguyên) ...
 
     if (voiceSelector) {
         voiceSelector.addEventListener("change", updateFavoriteBtnState);
@@ -159,10 +166,17 @@ export function initSettings() {
     if(saveBtn) saveBtn.addEventListener("click", () => saveData("status"));
     if(saveApiBtn) saveApiBtn.addEventListener("click", () => saveData("api-status"));
 
+
     function loadVoicesForLanguage(langCode, voicePrefs, favoriteVoices) {
         if (!voiceSelector) return;
+        
+        // Không xóa innerHTML ngay lập tức để tránh nhấp nháy nếu mạng nhanh
+        // Chỉ disable để user không click bậy
+        
         chrome.runtime.sendMessage({ action: "get_voices", langCode: langCode }, (response) => {
-            voiceSelector.innerHTML = ''; voiceSelector.disabled = false;
+            voiceSelector.innerHTML = ''; 
+            voiceSelector.disabled = false;
+            
             if (response && response.success && response.voices && response.voices.length > 0) {
                 let hasSelection = false;
                 const savedVoice = voicePrefs[langCode];
@@ -201,10 +215,12 @@ export function initSettings() {
             } else {
                 const opt = document.createElement("option"); opt.textContent = response.error || "Lỗi tải giọng"; voiceSelector.appendChild(opt);
             }
+            // Re-init custom select để cập nhật UI mới
             initCustomSelect("voiceSelector");
         });
     }
-
+    
+    // ... (Phần code updateFavoriteBtnState giữ nguyên) ...
     function updateFavoriteBtnState() {
         if (!toggleFavoriteBtn || !voiceSelector || !targetLangSelect) return;
         const currentVoice = voiceSelector.value;

@@ -31,6 +31,7 @@ body::-webkit-scrollbar,
 #magicListPopup::-webkit-scrollbar,
 #history-list::-webkit-scrollbar,
 .tab-content::-webkit-scrollbar,
+.settings-scroll-container::-webkit-scrollbar,
 textarea::-webkit-scrollbar { 
     width: 0px; 
     background: transparent; 
@@ -67,12 +68,29 @@ body.dark-mode .tab-btn.active { color: #6DD5FA; border-bottom-color: #6DD5FA; }
     display: none; /* Mặc định ẩn */
     height: 545px; /* 600px - 55px header */
     box-sizing: border-box;
+    /* Để sử dụng flex layout cho việc đẩy nút xuống dưới */
+    flex-direction: column; 
 }
 
 /* Class active để hiện tab - QUAN TRỌNG */
 .tab-content.active {
-    display: block; /* Mặc định là block cho Settings, API... */
-    overflow-y: auto; /* Cho phép cuộn */
+    display: flex; /* Đổi thành flex để căn chỉnh */
+    overflow: hidden; /* Quan trọng: Để container con cuộn */
+}
+
+/* --- FIX TAB SETTINGS & API (FLEX ĐỂ ĐẨY NÚT) --- */
+#settings-content.active, #api-content.active, #theme-content.active, #magic-content.active {
+    justify-content: space-between; /* Đẩy nội dung ra xa nhau */
+    padding-bottom: 10px; /* Padding đáy chung cho container */
+}
+
+/* Wrapper cho nội dung settings để nó cuộn được nếu dài */
+.settings-scroll-container, .magic-wrapper {
+    flex: 1; /* Chiếm hết không gian trống */
+    overflow-y: auto; /* Cuộn nội bộ */
+    padding-bottom: 10px;
+    display: flex;
+    flex-direction: column;
 }
 
 /* --- FIX TAB CHAT (FLEX) --- */
@@ -151,22 +169,22 @@ body.dark-mode .tab-btn.active { color: #6DD5FA; border-bottom-color: #6DD5FA; }
     padding-bottom: 10px;
 }
 
-/* --- FIX TAB MAGIC (FLEX) --- */
-#magic-content.active {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
 /* --- CÁC CLASS CŨ GIỮ NGUYÊN --- */
 .settings-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
-.input-group { margin-bottom: 15px; position: relative; } 
+.input-group { margin-bottom: 15px; position: relative; flex-shrink: 0; } 
 label { display: block; margin-bottom: 6px; color: var(--text-color); font-size: 12px; font-weight: 600; opacity: 0.9; }
 
 input[type="password"], textarea, input[type="number"], input[type="text"] {
     width: 100%; padding: 10px;
     border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 8px; font-size: 12px; color: #333;
     font-family: inherit; box-sizing: border-box; background: rgba(255, 255, 255, 0.9);
+}
+
+/* Style riêng cho textarea API key để nó resize */
+#apiKeys {
+    min-height: 60px;
+    overflow-y: hidden; /* Ẩn scrollbar để dùng auto-grow */
+    resize: none; /* Tắt resize thủ công */
 }
 
 select { display: none !important; }
@@ -315,13 +333,83 @@ button {
 }
 button:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
 
-button#saveBtn, button#saveThemeBtn, button#saveApiBtn {
-        width: 100%; padding: 12px; font-size: 14px; margin-top: 15px;
-        background: #0056b3; color: white; border: none;
+/* --- STYLE CHO NÚT SAVE & MANAGE ĐỒNG BỘ --- */
+/* Selector chính xác để gom hết các nút cần chỉnh */
+button#saveBtn, 
+button#saveThemeBtn, 
+button#saveApiBtn,
+.magic-manage-btn,
+#saveThemeBtn { /* Thêm ID cụ thể cho nút Theme nếu class chưa đủ mạnh */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important; 
+    padding: 12px !important; 
+    font-size: 14px !important; 
+    
+    /* Đẩy xuống sát đáy container cha (dùng flex) */
+    margin-top: auto !important; 
+    margin-bottom: 0 !important; /* Padding đáy của container cha lo việc cách viền */
+    
+    background: #0056b3 !important; 
+    color: white !important; 
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+    transition: background 0.2s !important;
+    flex-shrink: 0 !important; 
 }
-button#saveBtn:hover, button#saveThemeBtn:hover, button#saveApiBtn:hover { background: #004a99; }
 
-.status { margin-top: 10px; padding: 8px; border-radius: 4px; font-size: 12px; display: none; color: #333; text-align: center; font-weight: bold; }
+/* Hiệu ứng hover chung */
+button#saveBtn:hover, 
+button#saveThemeBtn:hover, 
+button#saveApiBtn:hover,
+.magic-manage-btn:hover,
+#saveThemeBtn:hover { 
+    background: #004a99 !important; 
+}
+
+/* Chỉnh padding đáy cho các container cha để nút cách viền 10px */
+#settings-content.active, 
+#api-content.active, 
+#theme-content.active, 
+#magic-content.active {
+    justify-content: space-between; /* Đẩy nội dung ra xa nhau */
+    padding-bottom: 10px !important; /* Padding đáy 10px cho container -> Nút sẽ cách viền 10px */
+}
+
+/* Wrapper cuộn nội dung bên trên nút */
+.settings-scroll-container, .magic-wrapper {
+    flex: 1; /* Chiếm hết không gian trống */
+    overflow-y: auto; /* Cuộn nội bộ */
+    padding-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    /* Đảm bảo không bị trùm lên nút */
+    margin-bottom: 10px; 
+}
+
+/* Hiệu ứng hover chung */
+button#saveBtn:hover, 
+button#saveThemeBtn:hover, 
+button#saveApiBtn:hover,
+.magic-manage-btn:hover { 
+    background: #004a99 !important; 
+}
+
+.status { 
+    margin-top: 5px; 
+    padding: 8px; 
+    border-radius: 4px; 
+    font-size: 12px; 
+    display: none; 
+    color: #333; 
+    text-align: center; 
+    font-weight: bold; 
+    flex-shrink: 0;
+}
 .status.success { background: #d4edda; color: #155724; display: block; }
 .status.error { background: #f8d7da; color: #721c24; display: block; }
 .hint { font-size: 11px; margin-top: 4px; opacity: 0.8; }

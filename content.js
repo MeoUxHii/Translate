@@ -1,9 +1,21 @@
 window.selectedText = "";
 let selectionRange = null;
 
-// --- MAGIC TEXT EXPANDER LOGIC (ULTRA ROBUST VERSION) ---
+// --- MAGIC TEXT EXPANDER LOGIC (MAGICAL STYLE) ---
 let magicShortcuts = [];
 let isMagicEnabled = true;
+
+// Danh sách web "khó ở" cần dùng chiêu đặc biệt
+const HARDCORE_DOMAINS = [
+    'docs.google.com',
+    'facebook.com',
+    'messenger.com',
+    'notion.so',
+    'slack.com',
+    'discord.com',
+    'trello.com',
+    'canva.com'
+];
 
 // Load settings
 chrome.storage.sync.get(['magicTemplates', 'magicEnabled'], (data) => {
@@ -11,7 +23,6 @@ chrome.storage.sync.get(['magicTemplates', 'magicEnabled'], (data) => {
     if (data.magicEnabled !== undefined) isMagicEnabled = data.magicEnabled;
 });
 
-// Listen for changes
 chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace === 'sync') {
         if (changes.magicTemplates) magicShortcuts = changes.magicTemplates.newValue || [];
@@ -19,146 +30,182 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
     }
 });
 
-// Hàm xử lý chính cho sự kiện input
-// Sử dụng input event là cách tốt nhất để bắt được ký tự vừa gõ trên mọi nền tảng
-function handleInput(e) {
-    if (!isMagicEnabled || !e.target) return;
-    
-    // Bỏ qua nếu đang xóa hoặc undo
-    if (e.inputType && (e.inputType.startsWith('delete') || e.inputType === 'historyUndo')) return;
-
-    const target = e.target;
-    const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
-    const isEditable = target.isContentEditable;
-
-    if (!isInput && !isEditable) return;
-    
-    // Chỉ xử lý trên element đang được focus
-    if (target !== document.activeElement && !target.contains(document.activeElement)) return;
-
-    // Delay cực nhỏ để đảm bảo ký tự vừa gõ đã thực sự vào DOM/Value
-    setTimeout(() => {
-        if (isInput) {
-            checkAndExpandInput(target);
-        } else {
-            checkAndExpandContentEditable(target);
-        }
-    }, 0);
+// Hàm kiểm tra web khó tính
+function isHardcoreSite() {
+    return HARDCORE_DOMAINS.some(domain => window.location.hostname.includes(domain));
 }
 
-// Lắng nghe sự kiện input
-document.addEventListener('input', handleInput);
+// Buffer lưu các phím vừa gõ (để phát hiện shortcut mà không cần đọc toàn bộ content)
+// Cái này giúp bypass việc GDocs không cho đọc value
+let keyBuffer = "";
+const BUFFER_LIMIT = 50; // Chỉ cần nhớ 50 ký tự cuối
 
-function checkAndExpandInput(target) {
+// Lắng nghe từng phím bấm (Keydown tin cậy hơn Input trên GDocs)
+// Quan trọng: Dùng capture = true để bắt sự kiện trước khi nó bị trang web chặn
+// Dùng window.addEventListener để bao phủ rộng nhất
+window.addEventListener('keydown', (e) => {
+    if (!isMagicEnabled) return;
+
+    // 1. Xử lý buffer: Chỉ ghi nhận các phím ký tự thông thường
+    // Bỏ qua các phím chức năng (Ctrl, Alt, Meta)
+    if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        keyBuffer += e.key;
+        if (keyBuffer.length > BUFFER_LIMIT) keyBuffer = keyBuffer.slice(-BUFFER_LIMIT);
+    } 
+    // 2. Xử lý xóa lùi: Cập nhật buffer khi người dùng xóa
+    else if (e.key === 'Backspace') {
+        keyBuffer = keyBuffer.slice(0, -1);
+    }
+
+    // 3. Trigger kiểm tra: Khi nhấn Space hoặc Enter
+    // Magical Text thường kích hoạt khi kết thúc từ
+    if (e.key === ' ' || e.key === 'Enter') {
+        // Dùng setTimeout để ký tự Space/Enter kịp vào buffer/editor trước khi check
+        setTimeout(() => checkAndExpand(), 10);
+    }
+}, true); 
+
+// Hàm xử lý chính
+async function checkAndExpand() {
     if (magicShortcuts.length === 0) return;
 
-    const text = target.value;
-    const cursorPosition = target.selectionStart;
-    const textBeforeCursor = text.slice(Math.max(0, cursorPosition - 50), cursorPosition);
-    
-    for (const template of magicShortcuts) {
-        if (textBeforeCursor.endsWith(template.shortcut)) {
-            // Tìm thấy shortcut!
-            const shortcutLen = template.shortcut.length;
-            
-            // Chọn shortcut vừa gõ
-            target.setSelectionRange(cursorPosition - shortcutLen, cursorPosition);
-            
-            // Dùng execCommand để thay thế -> Cái này giúp kích hoạt các event listeners của trang web
-            // để nó biết là value đã thay đổi (quan trọng cho React/Angular)
-            const success = document.execCommand('insertText', false, template.content);
-            
-            if (!success) {
-                // Fallback nếu execCommand thất bại (hiếm khi trên input/textarea)
-                const preText = text.substring(0, cursorPosition - shortcutLen);
-                const postText = text.substring(cursorPosition);
-                const newText = preText + template.content + postText;
-                
-                // Hack cho React 15/16+
-                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-                const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+    // Lấy buffer hiện tại (đã bao gồm ký tự trigger vừa gõ)
+    const currentBuffer = keyBuffer; 
 
-                if (target.tagName === 'INPUT' && nativeInputValueSetter) {
-                    nativeInputValueSetter.call(target, newText);
-                } else if (target.tagName === 'TEXTAREA' && nativeTextAreaValueSetter) {
-                    nativeTextAreaValueSetter.call(target, newText);
-                } else {
-                    target.value = newText;
-                }
-                
-                // Restore cursor
-                const newCursorPos = cursorPosition - shortcutLen + template.content.length;
-                target.setSelectionRange(newCursorPos, newCursorPos);
-                
-                // Dispatch events thủ công
-                target.dispatchEvent(new Event('input', { bubbles: true }));
-                target.dispatchEvent(new Event('change', { bubbles: true }));
+    for (const template of magicShortcuts) {
+        // Kiểm tra: Buffer kết thúc bằng "shortcut" + "ký tự phân tách" (space/enter)
+        
+        const triggerChar = currentBuffer.slice(-1); // Ký tự vừa gõ (Space/Enter)
+        // Chỉ check nếu trigger là khoảng trắng (đơn giản hóa)
+        if (triggerChar.trim() !== '') continue; 
+
+        const textToCheck = currentBuffer.trim(); // Bỏ space cuối đi để check shortcut
+        
+        if (textToCheck.endsWith(template.shortcut)) {
+            console.log("MeoU Magic: Triggered!", template.shortcut);
+            
+            // Reset buffer để tránh trigger lặp lại
+            keyBuffer = ""; 
+            
+            const target = document.activeElement;
+            
+            // Chiến thuật: Xóa lùi + Paste
+            // --- Logic thêm khoảng trắng vào content ---
+            let contentWithSpace = template.content;
+            if (!contentWithSpace.endsWith(' ')) {
+                contentWithSpace += ' ';
             }
+
+            await executeMagicalReplace(target, template.shortcut, contentWithSpace);
             return;
         }
     }
 }
 
-function checkAndExpandContentEditable(target) {
-    if (magicShortcuts.length === 0) return;
+async function executeMagicalReplace(target, shortcut, content) {
+    // 1. Tính số lần cần xóa = độ dài shortcut + 1 (ký tự kích hoạt space/enter)
+    const deleteCount = shortcut.length + 1; 
 
-    const selection = window.getSelection();
-    if (!selection.rangeCount) return;
+    // Với GDocs/Facebook, ta không select range được chuẩn.
+    // Ta sẽ gửi sự kiện Backspace N lần.
+    
+    if (isHardcoreSite()) {
+        // --- MODE: HARDCORE (GDocs, FB) ---
+        
+        // Bước 1: Xóa shortcut bằng cách giả lập phím Backspace
+        for (let i = 0; i < deleteCount; i++) { 
+            // Gửi sự kiện keydown Backspace
+            const keyEvent = new KeyboardEvent('keydown', {
+                key: 'Backspace',
+                code: 'Backspace',
+                keyCode: 8,
+                which: 8,
+                bubbles: true,
+                cancelable: true,
+                view: window
+            });
+            target.dispatchEvent(keyEvent);
+            
+            // Gửi thêm keyup cho đủ bộ
+            const keyUpEvent = new KeyboardEvent('keyup', {
+                key: 'Backspace',
+                code: 'Backspace',
+                keyCode: 8,
+                which: 8,
+                bubbles: true,
+                cancelable: true,
+                view: window
+            });
+            target.dispatchEvent(keyUpEvent);
+            
+            // Thêm delay nhỏ để editor kịp xử lý (quan trọng!)
+            await new Promise(r => setTimeout(r, 5));
+        }
 
-    const range = selection.getRangeAt(0);
-    const node = range.startContainer;
-
-    // Lấy text content hiện tại.
-    // Lưu ý: Với contentEditable phức tạp, node có thể không phải text node thuần túy
-    // Nhưng ta chỉ quan tâm text ngay tại con trỏ
-    let textBeforeCursor = "";
-    let cursorOffset = 0;
-
-    if (node.nodeType === Node.TEXT_NODE) {
-        cursorOffset = range.startOffset;
-        textBeforeCursor = node.textContent.slice(Math.max(0, cursorOffset - 50), cursorOffset);
+        // Bước 2: Paste nội dung mới (đã có space ở cuối)
+        await simulatePaste(content);
+        
     } else {
-        // Trường hợp node là element, thử lấy textContent nhưng cái này kém chính xác hơn
-        // Thường xảy ra khi vừa gõ xong 1 thẻ br hoặc div mới
-        return; 
-    }
+        // --- MODE: STANDARD (Input thường) ---
+        // Dùng cách cũ cho nhanh và mượt
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+            const start = target.selectionStart;
+            const end = target.selectionEnd;
+            const text = target.value;
+            // Cắt bỏ shortcut trước con trỏ (lùi lại deleteCount ký tự)
+            const replaceStart = Math.max(0, start - deleteCount);
+            
+            const newText = text.substring(0, replaceStart) + content + text.substring(end);
+            
+            // Hack React setter
+            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+            const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
 
-    for (const template of magicShortcuts) {
-        if (textBeforeCursor.endsWith(template.shortcut)) {
-            const shortcutLen = template.shortcut.length;
-
-            // 1. Chọn shortcut để xóa
-            // Tạo range bao trùm shortcut vừa gõ
-            const rangeToDelete = document.createRange();
-            try {
-                rangeToDelete.setStart(node, cursorOffset - shortcutLen);
-                rangeToDelete.setEnd(node, cursorOffset);
-                
-                selection.removeAllRanges();
-                selection.addRange(rangeToDelete);
-                
-                // 2. Thực hiện thay thế bằng execCommand
-                // Lệnh này cực kỳ mạnh, nó giả lập hành động Paste text của người dùng
-                // Giúp bypass hầu hết các cơ chế chặn của Facebook/Google Docs
-                document.execCommand('insertText', false, template.content);
-                
-                // Docs/Sheets đôi khi cần thêm cú hích này
-                if (target.isContentEditable) {
-                     target.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-                
-                return; // Thành công rồi thì thoát
-            } catch (err) {
-                console.log("MeoU Magic: Lỗi thay thế text", err);
-                // Khôi phục selection cũ nếu lỗi
-                selection.removeAllRanges();
-                selection.addRange(range);
+            if (target.tagName === 'INPUT' && nativeInputValueSetter) {
+                nativeInputValueSetter.call(target, newText);
+            } else if (target.tagName === 'TEXTAREA' && nativeTextAreaValueSetter) {
+                nativeTextAreaValueSetter.call(target, newText);
+            } else {
+                target.value = newText;
             }
+            
+            // Đặt lại con trỏ
+            const newPos = replaceStart + content.length;
+            target.setSelectionRange(newPos, newPos);
+            target.dispatchEvent(new Event('input', { bubbles: true }));
+        } else {
+            // ContentEditable thường
+             for (let i = 0; i < deleteCount; i++) document.execCommand('delete');
+             document.execCommand('insertText', false, content);
         }
     }
 }
-// --- END MAGIC LOGIC ---
 
+// Hàm Copy & Paste thần thánh
+async function simulatePaste(text) {
+    // Copy vào clipboard
+    const copyDataToClipboard = (e) => {
+        e.preventDefault();
+        e.clipboardData.setData('text/plain', text);
+    };
+    document.addEventListener('copy', copyDataToClipboard);
+    document.execCommand('copy');
+    document.removeEventListener('copy', copyDataToClipboard);
+
+    // Chờ xíu cho clipboard ăn
+    await new Promise(r => setTimeout(r, 50));
+
+    // Paste ra
+    const success = document.execCommand('paste');
+    
+    if (!success) {
+        // Fallback nếu paste bị chặn: Thử insertText 
+        console.log("MeoU: Paste bị chặn, thử insertText...");
+        document.execCommand('insertText', false, text);
+    }
+}
+
+// --- CÁC LOGIC DỊCH CŨ GIỮ NGUYÊN BÊN DƯỚI ---
 createTranslateButton();
 
 document.addEventListener("mouseup", (e) => {
@@ -246,6 +293,7 @@ document.addEventListener("mousemove", (e) => {
 });
 
 document.addEventListener("keydown", async (e) => {
+    // Giữ lại phím tắt dịch
     if (e.key === "T" && e.altKey && e.shiftKey) {
         e.preventDefault();
         const selection = window.getSelection();

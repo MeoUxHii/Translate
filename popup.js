@@ -1,12 +1,14 @@
+// ... imports giữ nguyên ...
 import { initSettings } from './modules/settings-manager.js';
 import { initTheme } from './modules/theme-manager.js';
 import { initChat } from './modules/chat-manager.js';
 import { initHistory } from './modules/history-manager.js';
 import { escapeHTML } from './modules/ui-utils.js';
 
-// --- MAGIC EXPANDER CLASS (INTEGRATED FOR POPUP) ---
+// ... Class PopupMagicExpander giữ nguyên ...
 class PopupMagicExpander {
-    constructor() {
+    // ... (code cũ) ...
+     constructor() {
         this.shortcuts = [];
         this.enabled = true;
         this.loadSettings();
@@ -71,72 +73,67 @@ class PopupMagicExpander {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Init modules
     initSettings();
     initTheme();
     initChat();
     initHistory();
-    
-    // Kích hoạt Magic trong Popup
     new PopupMagicExpander();
 
-    const tabs = [ 
-        { btn: 'settingsTabBtn', content: 'settings-content' }, 
-        { btn: 'apiTabBtn', content: 'api-content' }, 
-        { btn: 'historyTabBtn', content: 'history-content' }, 
+    // --- TAB NAVIGATION LOGIC (UPDATED) ---
+    const tabs = [
+        { btn: 'magicTabBtn', content: 'magic-content' }, // Mặc định là Magic cho giống ảnh
+        { btn: 'settingsTabBtn', content: 'settings-content' },
+        { btn: 'apiTabBtn', content: 'api-content' },
         { btn: 'themeTabBtn', content: 'theme-content' },
         { btn: 'chatTabBtn', content: 'chat-content' },
-        { btn: 'magicTabBtn', content: 'magic-content' }
+        { btn: 'historyTabBtn', content: 'history-content' }
     ];
 
-    // Set mặc định tab đầu tiên active (Model/Settings)
-    if (!document.querySelector('.tab-content.active')) {
-        const defaultTab = document.getElementById('settings-content');
-        if (defaultTab) defaultTab.classList.add('active');
+    // Hàm chuyển tab
+    function switchTab(tabId) {
+        tabs.forEach(t => {
+            const btn = document.getElementById(t.btn);
+            const content = document.getElementById(t.content);
+            
+            if (btn) btn.classList.remove('active');
+            if (content) content.classList.remove('active');
+            
+            if (t.btn === tabId) {
+                if (btn) btn.classList.add('active');
+                if (content) content.classList.add('active');
+            }
+        });
     }
 
-    tabs.forEach(tab => {
-        const btn = document.getElementById(tab.btn);
-        if(btn) {
+    // Gán sự kiện click
+    tabs.forEach(t => {
+        const btn = document.getElementById(t.btn);
+        if (btn) {
             btn.addEventListener('click', () => {
-                // 1. Bỏ active cũ
-                tabs.forEach(t => { 
-                    const b = document.getElementById(t.btn);
-                    const c = document.getElementById(t.content);
-                    if (b) b.classList.remove('active'); 
-                    if (c) {
-                        c.classList.remove('active');
-                        c.style.display = ''; 
-                    }
-                });
+                switchTab(t.btn);
                 
-                // 2. Set active mới
-                btn.classList.add('active'); 
-                const content = document.getElementById(tab.content);
-                if (content) content.classList.add('active');
-                
-                // 3. Logic riêng từng tab
-                if (tab.btn === 'historyTabBtn' && window.loadHistoryFunc) {
-                    window.loadHistoryFunc();
-                }
-                if (tab.btn === 'chatTabBtn' && window.chatScrollToBottom) {
-                    setTimeout(() => window.chatScrollToBottom(), 50); 
-                }
-                if (tab.btn === 'magicTabBtn') {
-                    loadMagicData();
-                }
+                // Trigger load data riêng cho từng tab nếu cần
+                if (t.btn === 'historyTabBtn' && window.loadHistoryFunc) window.loadHistoryFunc();
+                if (t.btn === 'magicTabBtn') loadMagicData();
             });
         }
     });
 
-    // --- MAGIC TAB LOGIC ---
+    // Mặc định mở tab Magic (hoặc tab đầu tiên trong list)
+    switchTab('magicTabBtn');
+
+
+    // --- MAGIC TAB LOGIC (UPDATED FOR NEW UI) ---
     const magicToggle = document.getElementById('magicToggle');
-    const openOptionsBtn = document.getElementById('openOptionsBtn');
+    const openOptionsBtn = document.getElementById('openOptionsBtn'); // Nút Create Shortcut
     const magicSearch = document.getElementById('magicSearchPopup');
     const magicList = document.getElementById('magicListPopup');
     const magicCount = document.getElementById('magicCountPopup');
     
     let allShortcuts = [];
 
+    // Load toggle state
     chrome.storage.sync.get(['magicEnabled'], (data) => {
         if(magicToggle) magicToggle.checked = data.magicEnabled !== false; 
     });
@@ -147,9 +144,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Nút Create Shortcut -> Mở trang Options (hoặc Modal tạo mới)
+    // Ở đây ta giữ logic cũ là mở trang options full
     if (openOptionsBtn) {
         openOptionsBtn.addEventListener('click', () => {
-            if (chrome.runtime.openOptionsPage) {
+             // Logic mở modal tạo mới ở đây (nếu muốn làm trong popup)
+             // Hoặc mở tab options full
+             if (chrome.runtime.openOptionsPage) {
                 chrome.runtime.openOptionsPage();
             } else {
                 window.open(chrome.runtime.getURL('options.html'));
@@ -170,25 +171,30 @@ document.addEventListener("DOMContentLoaded", () => {
         if (magicCount) magicCount.textContent = templates.length;
 
         if (templates.length === 0) {
-            magicList.innerHTML = `<div class="empty-magic-state">Chưa có shortcut nào.<br>Bấm "Quản lý" để thêm mới nhé!</div>`;
+            magicList.innerHTML = `<div class="empty-magic-state">No shortcuts found. Create one to get started!</div>`;
             return;
         }
 
         templates.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'magic-card';
-            card.onclick = () => {
-                if (chrome.runtime.openOptionsPage) chrome.runtime.openOptionsPage();
-                else window.open(chrome.runtime.getURL('options.html'));
+            const row = document.createElement('div');
+            row.className = 'magic-card'; // Dùng class card nhưng style như row
+            // Logic edit khi click
+            row.onclick = () => {
+                // Mở modal edit (chưa implement trong code này, giữ placeholder)
+                // window.open(chrome.runtime.getURL('options.html')); 
+                alert("Tính năng Edit đang phát triển! :P");
             };
-            card.innerHTML = `
+            
+            row.innerHTML = `
                 <div class="magic-card-shortcut">${escapeHTML(item.shortcut)}</div>
                 <div class="magic-card-preview">${escapeHTML(item.content)}</div>
+                <div class="col-actions" style="color: #94A3B8;">✎</div>
             `;
-            magicList.appendChild(card);
+            magicList.appendChild(row);
         });
     }
 
+    // Search Logic
     if (magicSearch) {
         magicSearch.addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase();
@@ -199,4 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
             renderMagicList(filtered);
         });
     }
+    
+    // Load data lần đầu
+    loadMagicData();
 });
