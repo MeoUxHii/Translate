@@ -1,3 +1,12 @@
+/* --- KHAI BÁO FONT MEOU --- */
+@font-face {
+    font-family: 'MeoUFont';
+    src: url('fonts/meou.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 :host {
   all: initial;
   position: absolute;
@@ -540,7 +549,8 @@ body.wibu-mode-active {
 }
 
 .manga-text-content {
-    font-family: 'Patrick Hand', 'Comic Sans MS', sans-serif;
+    /* Đã thêm font 'MeoUFont' vào ưu tiên cao nhất */
+    font-family: 'MeoUFont', 'Patrick Hand', 'Comic Sans MS', sans-serif;
     line-height: 1.3;
     width: 100%;
     height: 100%;

@@ -63,7 +63,16 @@ function getShadowRoot() {
     link.rel = 'stylesheet';
     link.href = chrome.runtime.getURL('content.css');
     shadowRoot.appendChild(link);
-    
+    const fontStyle = document.createElement('style');
+    fontStyle.textContent = `
+        @font-face {
+            font-family: 'MeoUFont';
+            src: url('${chrome.runtime.getURL('fonts/meou.ttf')}') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+    `;
+    shadowRoot.appendChild(fontStyle);    
     const style = document.createElement('style');
     style.textContent = `
         .ai-popup-back-to-translate {

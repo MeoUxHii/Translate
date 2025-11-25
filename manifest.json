@@ -37,7 +37,8 @@
                 "content.css",
                 "pictures/*.webp",
                 "voice/*/*.mp3",
-                "avatar/*.png"
+                "avatar/*.png",
+                "fonts/*.ttf" 
             ],
             "matches": ["<all_urls>"]
         }
